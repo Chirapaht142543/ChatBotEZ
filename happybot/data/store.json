@@ -5,10 +5,10 @@
       "customerName": "ลูกค้า คุณพลอย",
       "mode": "human",
       "status": "open",
-      "unread": 2,
+      "unread": 0,
       "createdAt": 1782444600000,
-      "lastMessage": "ขอบคุณค่ะ สนใจสั่งซื้อ 1 ใบค่ะ",
-      "lastMessageAt": 1782444780000,
+      "lastMessage": "อหกด",
+      "lastMessageAt": 1782468987634,
       "phone": "081-234-5678",
       "email": "ploy@example.com",
       "source": "LINE Official",
@@ -20,15 +20,27 @@
       "orders": [
         {
           "id": "#ORDER-20240520",
+          "productName": "กระเป๋าเป้เดินทางรุ่น Active",
+          "type": "instock",
           "price": "฿990",
           "date": "20 พ.ค. 2567",
           "status": "จัดส่งแล้ว"
         },
         {
           "id": "#ORDER-20240415",
+          "productName": "หมวกแก๊ปกันแดดพับได้ Outdoor",
+          "type": "instock",
           "price": "฿1,290",
           "date": "15 เม.ย. 2567",
           "status": "จัดส่งแล้ว"
+        },
+        {
+          "id": "#ORDER-20240625",
+          "productName": "เต็นท์นอนพกพาแบบกางอัตโนมัติ (พรีออเดอร์)",
+          "type": "preorder",
+          "price": "฿2,450",
+          "date": "25 มิ.ย. 2567",
+          "status": "ชำระเงินแล้ว"
         }
       ],
       "internalNotes": [
@@ -56,7 +68,16 @@
       ],
       "notes": "",
       "avatarUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
-      "orders": [],
+      "orders": [
+        {
+          "id": "#ORDER-20240620",
+          "productName": "แว่นตากันแดดขั้วโลกเลนส์ Polarized (พรีออเดอร์)",
+          "type": "preorder",
+          "price": "฿890",
+          "date": "20 มิ.ย. 2567",
+          "status": "รอชำระเงิน"
+        }
+      ],
       "internalNotes": []
     },
     "conv_pan": {
@@ -74,7 +95,16 @@
       "tags": [],
       "notes": "",
       "avatarUrl": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150",
-      "orders": [],
+      "orders": [
+        {
+          "id": "#ORDER-20240624",
+          "productName": "กระบอกน้ำเก็บอุณหภูมิสแตนเลส",
+          "type": "instock",
+          "price": "฿450",
+          "date": "24 มิ.ย. 2567",
+          "status": "จัดส่งแล้ว"
+        }
+      ],
       "internalNotes": []
     },
     "conv_em": {
@@ -94,7 +124,16 @@
       ],
       "notes": "",
       "avatarUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
-      "orders": [],
+      "orders": [
+        {
+          "id": "#ORDER-20240622",
+          "productName": "รองเท้าเดินป่าสายลุยรุ่น Adventure (พรีออเดอร์)",
+          "type": "preorder",
+          "price": "฿1,800",
+          "date": "22 มิ.ย. 2567",
+          "status": "ชำระเงินแล้ว"
+        }
+      ],
       "internalNotes": []
     },
     "conv_jan": {
@@ -221,6 +260,14 @@
         "sender": "customer",
         "text": "ขอบคุณค่ะ สนใจสั่งซื้อ 1 ใบค่ะ",
         "createdAt": 1782444780000
+      },
+      {
+        "id": "msg_mqus0h6a_21",
+        "conversationId": "conv_ploy",
+        "sender": "admin",
+        "kind": "text",
+        "text": "อหกด",
+        "createdAt": 1782468987634
       }
     ],
     "conv_nont": [
@@ -287,5 +334,5 @@
       }
     ]
   },
-  "seq": 20
+  "seq": 21
 }

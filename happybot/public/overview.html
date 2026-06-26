@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HappyBot — ภาพรวมแดชบอร์ด</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/overview.css">
+</head>
+<body>
+  <!-- Sidebar -->
+  <div data-include="components/sidebar.html"></div>
+
+  <!-- Main Wrapper -->
+  <div class="main-wrapper">
+    <!-- Top Header -->
+    <div data-include="components/top-header.html"></div>
+
+    <!-- Overview Content -->
+    <main class="overview-container">
+      <div class="overview-header">
+        <h1 class="overview-title">ภาพรวมระบบ</h1>
+        <p class="overview-subtitle">ติดตามความคืบหน้า ประสิทธิภาพการบริการ และข้อมูลสถิติของแชทบอทแบบเรียลไทม์</p>
+      </div>
+
+      <!-- Metric Cards Grid -->
+      <section class="metrics-grid">
+        <!-- Card 1: Total Chats -->
+        <div class="metric-card">
+          <div class="metric-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div class="metric-info">
+            <span class="metric-label">บทสนทนาทั้งหมด</span>
+            <h2 class="metric-value" id="statTotal">0</h2>
+            <span class="metric-trend positive">↑ 12% เทียบกับสัปดาห์ก่อน</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Waiting Chats -->
+        <div class="metric-card">
+          <div class="metric-icon red">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div class="metric-info">
+            <span class="metric-label">รอแอดมินตอบกลับ</span>
+            <h2 class="metric-value text-red" id="statWaiting">0</h2>
+            <span class="metric-trend neutral">แชทตกค้างที่ต้องดูแลทันที</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Bot Resolution -->
+        <div class="metric-card">
+          <div class="metric-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/></svg>
+          </div>
+          <div class="metric-info">
+            <span class="metric-label">อัตราตอบกลับโดยบอท</span>
+            <h2 class="metric-value text-green" id="statBotRate">0%</h2>
+            <span class="metric-trend positive">แบ่งเบาภาระงานแอดมิน</span>
+          </div>
+        </div>
+
+        <!-- Card 4: Avg Response Time -->
+        <div class="metric-card">
+          <div class="metric-icon orange">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="metric-info">
+            <span class="metric-label">เวลาตอบกลับเฉลี่ย</span>
+            <h2 class="metric-value" id="statTime">1.2 นาที</h2>
+            <span class="metric-trend positive">↓ 15 วินาที เร็วกว่าค่าเฉลี่ย</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Analytics Row -->
+      <div class="analytics-row">
+        <!-- SVG Area Chart Container -->
+        <div class="chart-card">
+          <h3 class="card-title">แนวโน้มปริมาณข้อความแชทรายวัน</h3>
+          <div class="chart-wrapper">
+            <!-- Custom SVG Area Chart -->
+            <svg class="analytics-chart" viewBox="0 0 500 200" preserveAspectRatio="none">
+              <!-- Grid lines -->
+              <line x1="0" y1="40" x2="500" y2="40" stroke="#f1f5f9" stroke-width="1" />
+              <line x1="0" y1="90" x2="500" y2="90" stroke="#f1f5f9" stroke-width="1" />
+              <line x1="0" y1="140" x2="500" y2="140" stroke="#f1f5f9" stroke-width="1" />
+              <line x1="0" y1="180" x2="500" y2="180" stroke="#cbd5e1" stroke-width="1.5" />
+              
+              <!-- Gradient definition -->
+              <defs>
+                <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.3"/>
+                  <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.0"/>
+                </linearGradient>
+              </defs>
+
+              <!-- Filled Area -->
+              <path d="M 0 180 L 0 140 Q 80 120 160 80 T 320 50 T 500 90 L 500 180 Z" fill="url(#chartGrad)" />
+
+              <!-- Line path -->
+              <path d="M 0 140 Q 80 120 160 80 T 320 50 T 500 90" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round" />
+              
+              <!-- Data dots -->
+              <circle cx="0" cy="140" r="4" fill="#2563eb" stroke="#ffffff" stroke-width="2" />
+              <circle cx="160" cy="80" r="4" fill="#2563eb" stroke="#ffffff" stroke-width="2" />
+              <circle cx="320" cy="50" r="4" fill="#2563eb" stroke="#ffffff" stroke-width="2" />
+              <circle cx="500" cy="90" r="4" fill="#2563eb" stroke="#ffffff" stroke-width="2" />
+            </svg>
+          </div>
+          <!-- Chart Labels -->
+          <div class="chart-labels">
+            <span>จันทร์</span>
+            <span>อังคาร</span>
+            <span>พุธ</span>
+            <span>พฤหัสบดี</span>
+            <span>ศุกร์</span>
+            <span>เสาร์</span>
+            <span>อาทิตย์</span>
+          </div>
+        </div>
+
+        <!-- Recent Activities Card -->
+        <div class="activity-card">
+          <h3 class="card-title">การเคลื่อนไหวล่าสุด</h3>
+          <div class="activity-list" id="activityList">
+            <!-- Populated dynamically by JavaScript -->
+            <div class="activity-loading">กำลังดึงข้อมูล...</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/overview.js"></script>
+</body>
+</html>

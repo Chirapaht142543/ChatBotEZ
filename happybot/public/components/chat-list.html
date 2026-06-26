@@ -1,0 +1,30 @@
+<section class="chat-list-col">
+        <div class="chat-list-header">
+          <div class="chat-list-title-row">
+            <h2 class="chat-list-title">แชททั้งหมด</h2>
+            <span class="chat-list-title-arrow"></span>
+            <span class="chat-list-badge" id="convCount">0</span>
+          </div>
+          <div class="search-wrapper">
+            <span class="search-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </span>
+            <input class="search-input" id="search" placeholder="ค้นหาแชทหรือชื่อผู้ติดต่อ" />
+          </div>
+        </div>
+        
+        <div class="chat-tabs">
+          <div class="chat-tab active" data-tab="all">ทั้งหมด</div>
+          <div class="chat-tab" data-tab="waiting">รอการตอบ</div>
+          <div class="chat-tab" data-tab="responding">กำลังตอบ</div>
+          <div class="chat-tab" data-tab="closed">ปิดแล้ว</div>
+        </div>
+        
+        <div class="conversations-list" id="convs">
+          <!-- Populated by JavaScript -->
+        </div>
+
+        <div class="load-more-container">
+          <button class="load-more-btn">โหลดแชทเพิ่มเติม</button>
+        </div>
+      </section>
