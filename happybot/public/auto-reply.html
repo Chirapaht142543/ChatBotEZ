@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HappyBot — ตั้งค่าบทสนทนาอัตโนมัติ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/auto-reply.css">
+</head>
+<body>
+  <!-- Sidebar -->
+  <div data-include="components/sidebar.html"></div>
+
+  <!-- Main Wrapper -->
+  <div class="main-wrapper">
+    <!-- Top Header -->
+    <div data-include="components/top-header.html"></div>
+
+    <!-- Main Content Area -->
+    <main class="autoreply-container">
+      <!-- Page Header -->
+      <div class="autoreply-header">
+        <h1 class="autoreply-title">บทสนทนาอัตโนมัติ (Auto-Response)</h1>
+        <p class="autoreply-subtitle">ตั้งค่าให้ระบบตอบคำถามลูกค้าอัตโนมัติผ่านการจับคู่คำสำคัญ (Keywords) หรือเปิดใช้งาน AI ปัญญาประดิษฐ์</p>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="autoreply-tabs-container">
+        <div class="autoreply-tabs">
+          <button class="autoreply-tab active" data-tab="rules">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="11" y2="17"/></svg>
+            กฎข้อความอัตโนมัติ
+          </button>
+          <button class="autoreply-tab" data-tab="settings">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            ตั้งค่า AI & บอท
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab Content 1: Rules -->
+      <section id="rulesSection" class="tab-content active">
+        <!-- Toolbar (Search & Add) -->
+        <div class="section-toolbar">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="rulesSearch" placeholder="ค้นหาด้วยคำสำคัญ หรือ ข้อความตอบกลับ..." />
+          </div>
+          <button class="btn btn-primary" id="btnAddRule">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            เพิ่มกฎการตอบกลับ
+          </button>
+        </div>
+
+        <!-- Rules Grid / List -->
+        <div class="rules-grid" id="rulesGrid">
+          <!-- Loading state -->
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <span>กำลังโหลดรายการกฎข้อความ...</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab Content 2: Settings -->
+      <section id="settingsSection" class="tab-content">
+        <div class="settings-layout">
+          <!-- Left Column: Settings Configuration -->
+          <div class="settings-card">
+            <h2 class="card-section-title">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; color: var(--brand-blue);"><path d="M12 2a10 10 0 0 1 7.54 16.59l-1.42-1.42A8 8 0 1 0 12 20v2a10 10 0 0 1 0-20zm0 4a6 6 0 1 1 0 12v2a8 8 0 1 0 0-16zm0 4a2 2 0 1 0 0 4v2a4 4 0 1 1 0-8z"/></svg>
+              ปัญญาประดิษฐ์ตอบแทน (Gemini AI Integration)
+            </h2>
+            
+            <!-- AI Status Check -->
+            <div class="api-key-status" id="apiKeyStatus">
+              <div class="status-indicator-dot"></div>
+              <div class="status-text">
+                <strong id="statusTitle">กำลังตรวจเช็คคีย์ของ Gemini AI...</strong>
+                <p id="statusDesc">หากตั้งค่าคีย์ API ในระบบหลังบ้าน (Environment) บอทจะสามารถประมวลผลข้อความเพื่อสนทนากับลูกค้าได้อย่างต่อเนื่อง</p>
+              </div>
+            </div>
+
+            <!-- Switch to enable/disable AI -->
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">เปิดใช้งาน AI ตอบกลับอัตโนมัติ (Gemini / Claude)</span>
+                <span class="setting-desc">เมื่อเปิดใช้งาน บอทจะใช้ AI ประมวลผลก่อนเป็นอันดับแรก หากไม่พบคีย์หรือไม่มีคำตอบจะข้ามไปใช้กฎคีย์เวิร์ด</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="aiToggle">
+                <span class="slider round"></span>
+              </label>
+            </div>
+
+            <!-- System Prompt Input -->
+            <div class="form-group">
+              <label class="form-label" for="systemPrompt">คำสั่งระบบ (System Prompt) ของ AI</label>
+              <textarea class="form-textarea" id="systemPrompt" rows="4" placeholder="ป้อนคำสั่งให้บอทของคุณ เช่น คุณเป็นบอทคอยตอบรายละเอียดสินค้า..."></textarea>
+              <span class="input-helper">กำหนดบุคลิกภาพ วิธีการพูดจา และข้อมูลข้อจำกัดของบอทเพื่อให้บริการอย่างสุภาพ</span>
+            </div>
+
+            <!-- Handoff Keywords Tag Input -->
+            <div class="form-group" style="margin-top: 28px; border-top: 1px solid var(--border-color); padding-top: 24px;">
+              <label class="form-label">คำสำคัญที่ส่งต่อให้คนจริงตอบทันที (Handoff Keywords)</label>
+              <div class="tag-input-container" id="handoffTagContainer">
+                <input type="text" id="handoffKeywordInput" placeholder="พิมพ์คีย์เวิร์ดแล้วกด Enter หรือลูกน้ำ (,)" />
+              </div>
+              <span class="input-helper">เมื่อลูกค้าพิมพ์ข้อความตรงกับคำในนี้ บอทจะหยุดตอบและระบบจะโยนเคสให้แอดมินคนจริงเข้าควบคุมทันที</span>
+            </div>
+          </div>
+
+          <!-- Right Column: API Setup Guide -->
+          <div class="guide-card">
+            <h3 class="guide-title">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; color: var(--brand-blue);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              คู่มือแนะแนวการเปิดใช้งาน Gemini API
+            </h3>
+            <ul class="guide-list">
+              <li class="guide-step">
+                <span class="guide-number">1</span>
+                <div>สร้างคีย์ API ฟรีได้ง่ายๆ ที่ <a href="https://aistudio.google.com/" target="_blank" style="color: var(--brand-blue); text-decoration: underline; font-weight: 600;">Google AI Studio</a> ด้วยบัญชี Google ของคุณ</div>
+              </li>
+              <li class="guide-step">
+                <span class="guide-number">2</span>
+                <div>คัดลอกคีย์ความลับ (API Key) ที่สร้างขึ้นมา</div>
+              </li>
+              <li class="guide-step">
+                <span class="guide-number">3</span>
+                <div>กำหนดคีย์นี้ให้เซิร์ฟเวอร์โดยตั้งค่าตัวแปรสภาพแวดล้อม <span class="guide-code">GEMINI_API_KEY</span></div>
+              </li>
+              <li class="guide-step">
+                <span class="guide-number">4</span>
+                <div>รัน HappyBot ด้วยสคริปต์ (เช่น ใน PowerShell):
+                  <div style="background-color: #f1f5f9; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 11px; margin-top: 6px; border: 1px solid #e2e8f0; color: #475569; overflow-x: auto; white-space: nowrap;">
+                    $env:GEMINI_API_KEY="AIzaSy..." ; node server.js
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Sticky Settings Action Footer -->
+        <div class="settings-footer">
+          <span class="save-status" id="saveStatus"></span>
+          <button class="btn btn-primary" id="btnSaveSettings">บันทึกการตั้งค่าทั้งหมด</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal สำหรับ เพิ่ม/แก้ไข กฎคีย์เวิร์ด -->
+  <div class="modal-backdrop" id="ruleModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalTitle">เพิ่มกฎการตอบกลับ</h3>
+        <button class="modal-close-btn" id="btnModalClose">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editRuleId" />
+        
+        <!-- Keywords input with tag representation -->
+        <div class="form-group">
+          <label class="form-label">คำสำคัญกระตุ้น (Keywords)</label>
+          <div class="tag-input-container" id="modalKeywordsContainer">
+            <input type="text" id="modalKeywordInput" placeholder="พิมพ์คำสำคัญแล้วกด Enter หรือพิมพ์เครื่องหมายจุลภาค (,)" />
+          </div>
+          <span class="input-helper">หากลูกค้าส่งข้อความมีคำตรงกับคีย์เวิร์ดในนี้ บอทจะเลือกกฎนี้ไปตอบกลับ (ไม่สนพิมพ์เล็ก-ใหญ่)</span>
+        </div>
+
+        <!-- Response message input -->
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label" for="modalReplyText">ข้อความสำหรับตอบกลับอัตโนมัติ</label>
+          <textarea class="form-textarea" id="modalReplyText" rows="5" placeholder="พิมพ์ข้อความตอบกลับที่บอทจะส่งไปหาลูกค้าทันที..."></textarea>
+          <span class="input-helper">ใช้ภาษาที่เป็นกันเอง สามารถใช้อีโมจิเพื่อเพิ่มความเป็นมิตรได้ 😊</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btnModalCancel">ยกเลิก</button>
+        <button class="btn btn-primary" id="btnModalSave">บันทึกกฎนี้</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS Page Logic -->
+  <script src="js/auto-reply.js"></script>
+</body>
+</html>

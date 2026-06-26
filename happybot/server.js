@@ -47,10 +47,12 @@ function emitMessage(conversationId, msg) {
 // ---------- ตัวช่วยอ่าน body แบบ JSON ----------
 function readJson(req) {
   return new Promise((resolve) => {
-    let body = '';
-    req.on('data', (c) => (body += c));
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
     req.on('end', () => {
       try {
+        const buffer = Buffer.concat(chunks);
+        const body = buffer.toString('utf8');
         resolve(body ? JSON.parse(body) : {});
       } catch {
         resolve({});
@@ -92,6 +94,17 @@ const lineWebhook = line.attach({ db, emitMessage, handleCustomerMessage });
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const { pathname } = url;
+
+  // ===== CORS: อนุญาตให้เว็บภายนอกเรียก API ได้ (สำหรับ Widget iframe) =====
+  if (pathname.startsWith('/api/')) {
+    res.setHeader('access-control-allow-origin', '*');
+    res.setHeader('access-control-allow-methods', 'GET, POST, OPTIONS');
+    res.setHeader('access-control-allow-headers', 'content-type');
+  }
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    return res.end();
+  }
 
   // ===== Webhook ของ LINE (ขั้นตอนที่ 6) — ต้องอ่าน raw body เพื่อตรวจลายเซ็น =====
   if (pathname === '/webhook/line' && req.method === 'POST') {
@@ -139,6 +152,9 @@ const server = http.createServer(async (req, res) => {
     const conv = db.createConversation({
       id: body.conversationId,
       customerName: body.customerName,
+      email: body.email,
+      phone: body.phone,
+      avatarUrl: body.avatarUrl,
     });
     broadcastToAdmins('conversation', conv);
     return sendJson(res, 200, conv);
@@ -178,7 +194,15 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 400, { error: 'conversationId, sender, text required' });
     }
     let conv = db.getConversation(conversationId);
-    if (!conv) conv = db.createConversation({ id: conversationId });
+    if (!conv || (sender === 'customer' && (body.customerName || body.email || body.phone || body.avatarUrl))) {
+      conv = db.createConversation({
+        id: conversationId,
+        customerName: body.customerName,
+        email: body.email,
+        phone: body.phone,
+        avatarUrl: body.avatarUrl,
+      });
+    }
 
     if (sender === 'admin') db.updateConversation(conversationId, { unread: 0 });
 
@@ -194,6 +218,35 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, msg);
   }
 
+  // ===== จัดการคีย์เวิร์ดบทสนทนาอัตโนมัติ (Rules) =====
+  if (pathname === '/api/bot/rules' && req.method === 'GET') {
+    return sendJson(res, 200, db.getRules());
+  }
+
+  if (pathname === '/api/bot/rules' && req.method === 'POST') {
+    const body = await readJson(req);
+    if (!Array.isArray(body.rules)) {
+      return sendJson(res, 400, { error: 'rules array required' });
+    }
+    const updated = db.saveRules(body.rules);
+    return sendJson(res, 200, { success: true, rules: updated });
+  }
+
+  // ===== จัดการตั้งค่า AI / Handoff (Settings) =====
+  if (pathname === '/api/bot/settings' && req.method === 'GET') {
+    const settings = db.getBotSettings();
+    const hasGeminiKey = !!process.env.GEMINI_API_KEY || !!settings.geminiApiKey;
+    const hasClaudeKey = !!process.env.ANTHROPIC_API_KEY || !!settings.anthropicApiKey;
+    const hasApiKey = hasGeminiKey || hasClaudeKey;
+    return sendJson(res, 200, Object.assign({}, settings, { hasApiKey, hasGeminiKey, hasClaudeKey }));
+  }
+
+  if (pathname === '/api/bot/settings' && req.method === 'POST') {
+    const body = await readJson(req);
+    const updated = db.saveBotSettings(body);
+    return sendJson(res, 200, { success: true, settings: updated });
+  }
+
   // ===== เสิร์ฟไฟล์หน้าเว็บ =====
   let filePath =
     pathname === '/' ? '/admin.html' : decodeURIComponent(pathname);
@@ -203,8 +256,17 @@ const server = http.createServer(async (req, res) => {
   fs.readFile(full, (err, data) => {
     if (err) return sendJson(res, 404, { error: 'not found' });
     const ext = path.extname(full);
-    const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
-    res.writeHead(200, { 'content-type': (types[ext] || 'text/plain') + '; charset=utf-8' });
+    const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json' };
+    const headers = { 'content-type': (types[ext] || 'text/plain') + '; charset=utf-8' };
+
+    // อนุญาตให้เว็บภายนอกโหลด widget.js และ widget.html ข้าม domain ได้
+    const basename = path.basename(full);
+    if (basename === 'widget.js' || basename === 'widget.html') {
+      headers['access-control-allow-origin'] = '*';
+      headers['access-control-allow-methods'] = 'GET';
+    }
+
+    res.writeHead(200, headers);
     res.end(data);
   });
 });

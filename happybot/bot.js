@@ -9,45 +9,13 @@
  *   3) human       : ถ้าตอบไม่ได้ -> ส่งต่อให้แอดมินคนจริง
  */
 
-// ----- ฐานความรู้แบบกฎ: ปรับ/เพิ่มได้ตามร้านของคุณ -----
-const RULES = [
-  {
-    keywords: ['สวัสดี', 'หวัดดี', 'ดีครับ', 'ดีค่ะ', 'hello', 'hi'],
-    reply: 'สวัสดีค่ะ 😊 ยินดีให้บริการนะคะ สอบถามเรื่องไหนเป็นพิเศษ แจ้งได้เลยค่ะ',
-  },
-  {
-    keywords: ['ราคา', 'เท่าไหร่', 'เท่าไร', 'กี่บาท'],
-    reply: 'รบกวนแจ้งชื่อรุ่นสินค้าที่สนใจได้เลยค่ะ เดี๋ยวแจ้งราคาให้นะคะ 🙏',
-  },
-  {
-    keywords: ['ส่ง', 'จัดส่ง', 'ค่าส่ง', 'ขนส่ง', 'กี่วัน'],
-    reply: 'จัดส่งทั่วประเทศค่ะ ค่าส่งเริ่มต้น 40 บาท สั่งครบ 1,000 บาท ส่งฟรี ปกติได้รับภายใน 2-3 วันทำการค่ะ',
-  },
-  {
-    keywords: ['กระเป๋า', 'โน้ตบุ๊ก', 'โน๊ตบุ๊ค', 'laptop', 'ขวดน้ำ'],
-    reply: 'รุ่นนี้ใส่โน้ตบุ๊ก 15.6 นิ้วได้ค่ะ มีช่องใส่ขวดน้ำด้านข้าง 2 ช่อง วัสดุกันน้ำค่ะ 👜',
-  },
-  {
-    keywords: ['คืนสินค้า', 'คืนเงิน', 'เปลี่ยนสินค้า', 'รับประกัน'],
-    reply: 'สินค้าเปลี่ยน/คืนได้ภายใน 7 วันค่ะ โดยสินค้าต้องอยู่ในสภาพสมบูรณ์ รบกวนแจ้งเลขคำสั่งซื้อด้วยนะคะ',
-  },
-  {
-    keywords: ['ใบกำกับภาษี', 'ใบเสร็จ', 'vat'],
-    reply: 'ออกใบกำกับภาษีเต็มรูปได้ค่ะ รบกวนแจ้งชื่อ-ที่อยู่ และเลขผู้เสียภาษีด้วยนะคะ',
-  },
-  {
-    keywords: ['ขอบคุณ', 'ขอบใจ', 'thank'],
-    reply: 'ยินดีค่ะ 🙏 หากต้องการสอบถามเพิ่มเติม แจ้งได้ตลอดเลยนะคะ',
-  },
-];
-
-// คำที่บ่งบอกว่าลูกค้าต้องการคุยกับคนจริง -> ส่งต่อทันที
-const HANDOFF_KEYWORDS = ['แอดมิน', 'คนจริง', 'เจ้าหน้าที่', 'พนักงาน', 'ติดต่อคน'];
+const db = require('./db');
 
 function matchRule(text) {
+  const rules = db.getRules();
   const lower = (text || '').toLowerCase();
-  for (const rule of RULES) {
-    if (rule.keywords.some((k) => lower.includes(k.toLowerCase()))) {
+  for (const rule of rules) {
+    if (rule.keywords && rule.keywords.some((k) => lower.includes(k.toLowerCase()))) {
       return rule.reply;
     }
   }
@@ -55,54 +23,124 @@ function matchRule(text) {
 }
 
 function wantsHuman(text) {
+  const settings = db.getBotSettings();
   const lower = (text || '').toLowerCase();
-  return HANDOFF_KEYWORDS.some((k) => lower.includes(k.toLowerCase()));
+  const keywords = settings.handoffKeywords || ['แอดมิน', 'คนจริง', 'เจ้าหน้าที่', 'พนักงาน', 'ติดต่อคน'];
+  return keywords.some((k) => lower.includes(k.toLowerCase()));
 }
 
 /*
  * aiReply — จุดเสียบโมเดล AI (ทางเลือก)
  * --------------------------------------
  * ค่าเริ่มต้นปิดอยู่ (คืน null) เพื่อให้รันได้โดยไม่ต้องต่อเน็ต/ใส่คีย์
- * วิธีเปิด: ตั้ง environment variable ANTHROPIC_API_KEY แล้วปลดคอมเมนต์ด้านล่าง
+ * วิธีเปิด: ตั้ง environment variable GEMINI_API_KEY (หรือ ANTHROPIC_API_KEY) และเปิดใช้งานในหน้าตั้งค่า AI
  */
 async function aiReply(history) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return null; // ไม่ได้ตั้งคีย์ -> ข้ามไปใช้ rule-based/handoff
+  const settings = db.getBotSettings();
+  if (!settings.aiEnabled) return null; // ตรวจสอบสถานะเปิด/ปิด AI ในระบบตั้งค่า
 
-  try {
-    const messages = history.map((m) => ({
-      role: m.sender === 'customer' ? 'user' : 'assistant',
-      content: m.text,
-    }));
+  const geminiApiKey = process.env.GEMINI_API_KEY || settings.geminiApiKey;
+  const anthropicApiKey = process.env.ANTHROPIC_API_KEY || settings.anthropicApiKey;
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 500,
-        system:
-          'คุณเป็นแอดมินร้านขายกระเป๋าและของใช้ออนไลน์ ตอบลูกค้าด้วยภาษาไทยที่สุภาพ ' +
-          'กระชับ เป็นกันเอง ลงท้ายด้วย "ค่ะ" ถ้าไม่แน่ใจหรือเป็นเรื่องเฉพาะคำสั่งซื้อ ' +
-          'ให้บอกว่าจะให้แอดมินช่วยตรวจสอบให้นะคะ',
-        messages,
-      }),
-    });
-    const data = await res.json();
-    const text = (data.content || [])
-      .filter((b) => b.type === 'text')
-      .map((b) => b.text)
-      .join('\n')
-      .trim();
-    return text || null;
-  } catch (e) {
-    console.error('aiReply error:', e.message);
-    return null;
+  // 1) ใช้ Gemini API เป็นอันดับแรก
+  if (geminiApiKey) {
+    try {
+      // แปลงประวัติเป็นฟอร์แมตของ Gemini และรวมข้อความจากบทบาทเดียวกันที่พิมพ์ติดต่อกัน
+      const contents = [];
+      for (const m of history) {
+        const role = m.sender === 'customer' ? 'user' : 'model';
+        if (contents.length > 0 && contents[contents.length - 1].role === role) {
+          contents[contents.length - 1].parts[0].text += '\n' + m.text;
+        } else {
+          contents.push({
+            role,
+            parts: [{ text: m.text }]
+          });
+        }
+      }
+
+      if (contents.length === 0) return null;
+
+      const systemPrompt = settings.aiSystemPrompt || 'คุณเป็นแอดมินร้านค้าออนไลน์ตอบคำถามลูกค้า';
+      const model = settings.aiModel || 'gemini-1.5-flash';
+      const temp = settings.aiTemperature !== undefined ? parseFloat(settings.aiTemperature) : 0.7;
+
+      const generationConfig = {
+        maxOutputTokens: 2000,
+        temperature: temp
+      };
+
+      // Disable thinking budget for Gemini 2.5/3.x models to prevent response truncation
+      if (model.includes('2.5') || model.includes('3')) {
+        generationConfig.thinkingConfig = {
+          thinkingBudget: 0
+        };
+      }
+
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents,
+          systemInstruction: {
+            parts: [{ text: systemPrompt }]
+          },
+          generationConfig
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error('Gemini API error response:', errText);
+        return null;
+      }
+
+      const data = await res.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      return text ? text.trim() : null;
+    } catch (e) {
+      console.error('Gemini aiReply error:', e.message);
+    }
   }
+
+  // 2) ใช้ Anthropic Claude เป็นตัวเลือกสำรอง
+  if (anthropicApiKey) {
+    try {
+      const messages = history.map((m) => ({
+        role: m.sender === 'customer' ? 'user' : 'assistant',
+        content: m.text,
+      }));
+
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': anthropicApiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 500,
+          system: settings.aiSystemPrompt || 'คุณเป็นแอดมินร้านค้าออนไลน์ตอบคำถามลูกค้า',
+          messages,
+        }),
+      });
+      const data = await res.json();
+      const text = (data.content || [])
+        .filter((b) => b.type === 'text')
+        .map((b) => b.text)
+        .join('\n')
+        .trim();
+      return text || null;
+    } catch (e) {
+      console.error('Anthropic aiReply error:', e.message);
+      return null;
+    }
+  }
+
+  return null;
 }
 
 /*
