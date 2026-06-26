@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HappyBot — แดชบอร์ดแอดมิน</title>
+<style>
+  :root{
+    --nav:#0f1b3d; --nav-active:#1c2a52; --brand:#2563eb; --brand-dark:#1d4ed8;
+    --bg:#f4f6fb; --line:#e8ebf2; --text:#1e293b; --muted:#7c8aa5;
+    --bubble-in:#fff; --bubble-out:#dbeafe;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,"Segoe UI","Sarabun",sans-serif}
+  body{background:var(--bg);color:var(--text);height:100vh;overflow:hidden}
+  .app{display:grid;grid-template-columns:220px 320px 1fr 300px;height:100vh}
+
+  /* ---- เมนูซ้าย ---- */
+  .nav{background:var(--nav);color:#cfd6e8;display:flex;flex-direction:column;padding:18px 0}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700;color:#fff;font-size:18px;padding:0 20px 22px}
+  .logo .mark{width:34px;height:34px;border-radius:10px;background:var(--brand);display:grid;place-items:center}
+  .nav a{display:flex;align-items:center;gap:12px;padding:12px 20px;color:#aeb8d4;text-decoration:none;font-size:14px;cursor:pointer}
+  .nav a.active{background:var(--nav-active);color:#fff;border-left:3px solid var(--brand)}
+  .nav a .badge{margin-left:auto;background:#ef4444;color:#fff;font-size:11px;border-radius:10px;padding:1px 7px}
+  .ver{margin-top:auto;padding:14px 20px;font-size:11px;color:#5b6a8f}
+
+  /* ---- รายการแชท ---- */
+  .list{background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column}
+  .list .top{padding:16px;border-bottom:1px solid var(--line)}
+  .list h2{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .pill{background:#e0e9ff;color:var(--brand);font-size:12px;border-radius:10px;padding:1px 8px}
+  .search{margin-top:12px;width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13px;outline:none}
+  .convs{flex:1;overflow-y:auto}
+  .conv{display:flex;gap:11px;padding:13px 16px;border-bottom:1px solid #f1f3f9;cursor:pointer}
+  .conv:hover{background:#f8faff}
+  .conv.active{background:#eaf1ff}
+  .conv .av{width:42px;height:42px;border-radius:50%;background:#dfe6f5;flex:none;display:grid;place-items:center;font-size:18px}
+  .conv .meta{flex:1;min-width:0}
+  .conv .nm{font-size:14px;font-weight:600;display:flex;justify-content:space-between}
+  .conv .nm .t{font-size:11px;color:var(--muted);font-weight:400}
+  .conv .pv{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .conv .un{background:var(--brand);color:#fff;font-size:11px;border-radius:50%;width:18px;height:18px;display:grid;place-items:center;margin-top:4px}
+  .tag-bot{font-size:10px;color:#16a34a}
+  .tag-human{font-size:10px;color:#ea580c}
+
+  /* ---- หน้าต่างสนทนา ---- */
+  .chat{display:flex;flex-direction:column;background:#fafbff}
+  .chat .hd{background:#fff;border-bottom:1px solid var(--line);padding:14px 20px;display:flex;align-items:center;gap:12px}
+  .chat .hd .av{width:40px;height:40px;border-radius:50%;background:#dfe6f5;display:grid;place-items:center;font-size:18px}
+  .chat .hd .nm{font-weight:600;font-size:15px}
+  .chat .hd .st{font-size:12px;color:#16a34a}
+  .modebtn{margin-left:auto;border:1px solid var(--line);background:#fff;border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px}
+  .modebtn.human{background:#fff7ed;border-color:#fed7aa;color:#ea580c}
+  .modebtn.bot{background:#f0fdf4;border-color:#bbf7d0;color:#16a34a}
+  .stream{flex:1;overflow-y:auto;padding:22px;display:flex;flex-direction:column;gap:12px}
+  .m{max-width:70%;display:flex;flex-direction:column}
+  .m.in{align-self:flex-start}
+  .m.out{align-self:flex-end;align-items:flex-end}
+  .m .b{padding:11px 15px;border-radius:16px;font-size:14px;line-height:1.55;white-space:pre-wrap;word-wrap:break-word}
+  .m.in .b{background:var(--bubble-in);border:1px solid var(--line);border-bottom-left-radius:4px}
+  .m.out .b{background:var(--bubble-out);border-bottom-right-radius:4px}
+  .m .meta{font-size:10px;color:var(--muted);margin-top:4px}
+  .who-bot{color:#16a34a;font-weight:600}
+  .compose{background:#fff;border-top:1px solid var(--line);padding:14px}
+  .compose .box{display:flex;gap:10px}
+  .compose input{flex:1;border:1px solid var(--line);border-radius:24px;padding:12px 16px;font-size:14px;outline:none}
+  .compose input:focus{border-color:var(--brand)}
+  .compose button{background:var(--brand);color:#fff;border:none;border-radius:24px;padding:0 24px;font-weight:600;cursor:pointer}
+  .compose button:hover{background:var(--brand-dark)}
+  .empty{flex:1;display:grid;place-items:center;color:var(--muted);font-size:15px}
+
+  /* ---- แผงข้อมูลลูกค้า ---- */
+  .info{background:#fff;border-left:1px solid var(--line);padding:20px;overflow-y:auto}
+  .info h3{font-size:14px;font-weight:700;margin-bottom:14px}
+  .info .cust{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+  .info .cust .av{width:60px;height:60px;border-radius:50%;background:#dfe6f5;display:grid;place-items:center;font-size:26px}
+  .info .cust .nm{font-weight:700;font-size:15px}
+  .info .field{margin-top:14px}
+  .info .field label{font-size:12px;color:var(--muted)}
+  .info .field div{font-size:14px;margin-top:2px}
+  .note{margin-top:18px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px;font-size:13px;color:#92651b}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- เมนูซ้าย -->
+  <nav class="nav">
+    <div class="logo"><span class="mark">🤖</span> HappyBot</div>
+    <a>📊 ภาพรวม</a>
+    <a class="active">💬 แชท <span class="badge" id="navBadge">0</span></a>
+    <a>👥 ลูกค้า</a>
+    <a>📣 บรอดแคสต์</a>
+    <a>🛒 คำสั่งซื้อ</a>
+    <a>📦 สินค้า</a>
+    <a>🤖 บทสนทนาอัตโนมัติ</a>
+    <a>📈 รายงาน</a>
+    <a>⚙️ ตั้งค่า</a>
+    <div class="ver">เวอร์ชั่น 1.0.0</div>
+  </nav>
+
+  <!-- รายการแชท -->
+  <section class="list">
+    <div class="top">
+      <h2>แชททั้งหมด <span class="pill" id="convCount">0</span></h2>
+      <input class="search" id="search" placeholder="ค้นหาแชทหรือชื่อผู้ติดต่อ" />
+    </div>
+    <div class="convs" id="convs"></div>
+  </section>
+
+  <!-- หน้าต่างสนทนา -->
+  <section class="chat" id="chat">
+    <div class="empty" id="emptyState">เลือกแชทจากรายการด้านซ้ายเพื่อเริ่มตอบ</div>
+  </section>
+
+  <!-- แผงข้อมูลลูกค้า -->
+  <aside class="info" id="info">
+    <h3>ข้อมูลลูกค้า</h3>
+    <div id="infoBody" style="color:var(--muted);font-size:13px">ยังไม่ได้เลือกแชท</div>
+  </aside>
+</div>
+
+<script>
+const API = location.origin;
+let convs = {};        // id -> conversation
+let activeId = null;
+
+const convsEl = document.getElementById('convs');
+const chatEl = document.getElementById('chat');
+const infoBody = document.getElementById('infoBody');
+
+function fmt(ts){ return new Date(ts).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}); }
+function escapeHtml(s){ return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+function renderConvList(){
+  const items = Object.values(convs).sort((a,b)=>(b.lastMessageAt||0)-(a.lastMessageAt||0));
+  document.getElementById('convCount').textContent = items.length;
+  const totalUnread = items.reduce((s,c)=>s+(c.unread||0),0);
+  document.getElementById('navBadge').textContent = totalUnread;
+  convsEl.innerHTML = items.map(c=>`
+    <div class="conv ${c.id===activeId?'active':''}" data-id="${c.id}">
+      <div class="av">🙂</div>
+      <div class="meta">
+        <div class="nm">${escapeHtml(c.customerName)} <span class="t">${c.lastMessageAt?fmt(c.lastMessageAt):''}</span></div>
+        <div class="pv">${escapeHtml(c.lastMessage||'')}</div>
+        <span class="${c.mode==='human'?'tag-human':'tag-bot'}">${c.mode==='human'?'● แอดมินดูแล':'● บอทตอบอัตโนมัติ'}</span>
+      </div>
+      ${c.unread?`<div class="un">${c.unread}</div>`:''}
+    </div>`).join('');
+  convsEl.querySelectorAll('.conv').forEach(el=>el.onclick=()=>openConv(el.dataset.id));
+}
+
+async function openConv(id){
+  activeId = id;
+  const c = convs[id];
+  c.unread = 0;
+  renderConvList();
+  renderInfo(c);
+
+  const msgs = await (await fetch(API+`/api/conversations/${id}/messages`)).json();
+  chatEl.innerHTML = `
+    <div class="hd">
+      <div class="av">🙂</div>
+      <div><div class="nm">${escapeHtml(c.customerName)}</div><div class="st">● ออนไลน์</div></div>
+      <button class="modebtn ${c.mode}" id="modeBtn"></button>
+    </div>
+    <div class="stream" id="stream"></div>
+    <div class="compose"><div class="box">
+      <input id="reply" placeholder="พิมพ์ข้อความตอบกลับ..." autocomplete="off"/>
+      <button id="sendBtn">ส่ง</button>
+    </div></div>`;
+  msgs.forEach(addBubble);
+  scrollDown();
+  updateModeBtn();
+
+  document.getElementById('sendBtn').onclick = sendReply;
+  document.getElementById('reply').addEventListener('keydown',e=>{if(e.key==='Enter')sendReply();});
+  document.getElementById('modeBtn').onclick = toggleMode;
+}
+
+function addBubble(m){
+  const stream = document.getElementById('stream');
+  if(!stream || m.conversationId!==activeId) return;
+  const out = m.sender !== 'customer';   // ข้อความจากแอดมิน/บอท = ฝั่งขวา
+  const who = m.sender==='bot' ? '<span class="who-bot">บอท</span> · ' : (m.sender==='admin'?'แอดมิน · ':'');
+  const div = document.createElement('div');
+  div.className = 'm ' + (out?'out':'in');
+  div.innerHTML = `<div class="b">${escapeHtml(m.text)}</div><div class="meta">${who}${fmt(m.createdAt)}</div>`;
+  stream.appendChild(div);
+  scrollDown();
+}
+function scrollDown(){ const s=document.getElementById('stream'); if(s) s.scrollTop=s.scrollHeight; }
+
+function updateModeBtn(){
+  const c = convs[activeId]; const btn=document.getElementById('modeBtn');
+  if(!btn) return;
+  btn.className = 'modebtn ' + c.mode;
+  btn.textContent = c.mode==='human' ? '🧑 โหมดแอดมินตอบเอง (กดเพื่อให้บอทตอบ)' : '🤖 โหมดบอทตอบ (กดเพื่อตอบเอง)';
+}
+async function toggleMode(){
+  const c = convs[activeId];
+  const next = c.mode==='human' ? 'bot' : 'human';
+  await fetch(API+`/api/conversations/${activeId}/mode`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:next})});
+  c.mode = next; updateModeBtn(); renderConvList();
+}
+
+async function sendReply(){
+  const input = document.getElementById('reply');
+  const text = input.value.trim(); if(!text) return;
+  input.value='';
+  await fetch(API+'/api/messages',{method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({conversationId:activeId,sender:'admin',text})});
+}
+
+function renderInfo(c){
+  infoBody.innerHTML = `
+    <div class="cust"><div class="av">🙂</div><div class="nm">${escapeHtml(c.customerName)}</div><div class="st" style="color:#16a34a;font-size:12px">● ออนไลน์</div></div>
+    <div class="field"><label>ช่องทาง</label><div>🌐 เว็บไซต์ (Web Chat)</div></div>
+    <div class="field"><label>รหัสบทสนทนา</label><div>${c.id}</div></div>
+    <div class="field"><label>เริ่มสนทนา</label><div>${new Date(c.createdAt).toLocaleString('th-TH')}</div></div>
+    <div class="note">💡 หมายเหตุ: นี่คือระบบตัวอย่าง ข้อมูลลูกค้า/ประวัติสั่งซื้อเชื่อมต่อจากฐานข้อมูลร้านได้ในขั้นถัดไป</div>`;
+}
+
+// ---- โหลดข้อมูลเริ่มต้น + เปิดสตรีมแอดมิน ----
+async function init(){
+  const list = await (await fetch(API+'/api/conversations')).json();
+  list.forEach(c=>convs[c.id]=c);
+  renderConvList();
+
+  const es = new EventSource(API+'/api/admin-stream');
+  es.addEventListener('message', e=>{
+    const m = JSON.parse(e.data);
+    const c = convs[m.conversationId];
+    if(c){ c.lastMessage=m.text; c.lastMessageAt=m.createdAt; if(m.sender==='customer'&&m.conversationId!==activeId)c.unread=(c.unread||0)+1; }
+    addBubble(m);
+    renderConvList();
+  });
+  es.addEventListener('conversation', e=>{ const c=JSON.parse(e.data); convs[c.id]=Object.assign(convs[c.id]||{},c); renderConvList(); });
+  es.addEventListener('handoff', e=>{ const {conversationId}=JSON.parse(e.data); if(convs[conversationId])convs[conversationId].mode='human'; renderConvList(); if(conversationId===activeId)updateModeBtn(); });
+}
+
+document.getElementById('search').addEventListener('input',e=>{
+  const q=e.target.value.toLowerCase();
+  convsEl.querySelectorAll('.conv').forEach(el=>{
+    const c=convs[el.dataset.id];
+    el.style.display=(c.customerName.toLowerCase().includes(q)||(c.lastMessage||'').toLowerCase().includes(q))?'':'none';
+  });
+});
+
+init();
+</script>
+</body>
+</html>

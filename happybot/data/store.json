@@ -1,0 +1,291 @@
+{
+  "conversations": {
+    "conv_ploy": {
+      "id": "conv_ploy",
+      "customerName": "ลูกค้า คุณพลอย",
+      "mode": "human",
+      "status": "open",
+      "unread": 2,
+      "createdAt": 1782444600000,
+      "lastMessage": "ขอบคุณค่ะ สนใจสั่งซื้อ 1 ใบค่ะ",
+      "lastMessageAt": 1782444780000,
+      "phone": "081-234-5678",
+      "email": "ploy@example.com",
+      "source": "LINE Official",
+      "tags": [
+        "สนใจสินค้า"
+      ],
+      "notes": "",
+      "avatarUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
+      "orders": [
+        {
+          "id": "#ORDER-20240520",
+          "price": "฿990",
+          "date": "20 พ.ค. 2567",
+          "status": "จัดส่งแล้ว"
+        },
+        {
+          "id": "#ORDER-20240415",
+          "price": "฿1,290",
+          "date": "15 เม.ย. 2567",
+          "status": "จัดส่งแล้ว"
+        }
+      ],
+      "internalNotes": [
+        {
+          "text": "ลูกค้าสนใจสินค้ากระเป๋าเป้ ติดตามโปรลดราคา",
+          "date": "20 พ.ค. 2567 10:15",
+          "sender": "แอดมิน"
+        }
+      ]
+    },
+    "conv_nont": {
+      "id": "conv_nont",
+      "customerName": "คุณนนท์",
+      "mode": "human",
+      "status": "open",
+      "unread": 1,
+      "createdAt": 1782443880000,
+      "lastMessage": "ขอใบกำกับภาษีได้ไหมครับ",
+      "lastMessageAt": 1782443880000,
+      "phone": "089-765-4321",
+      "email": "nont@example.com",
+      "source": "Facebook Messenger",
+      "tags": [
+        "สอบถามภาษี"
+      ],
+      "notes": "",
+      "avatarUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+      "orders": [],
+      "internalNotes": []
+    },
+    "conv_pan": {
+      "id": "conv_pan",
+      "customerName": "ลูกค้า คุณปาน",
+      "mode": "bot",
+      "status": "waiting",
+      "unread": 0,
+      "createdAt": 1782441900000,
+      "lastMessage": "สินค้าจะส่งวันไหนคะ",
+      "lastMessageAt": 1782441900000,
+      "phone": "082-345-6789",
+      "email": "pan@example.com",
+      "source": "Web Chat",
+      "tags": [],
+      "notes": "",
+      "avatarUrl": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150",
+      "orders": [],
+      "internalNotes": []
+    },
+    "conv_em": {
+      "id": "conv_em",
+      "customerName": "คุณเอ็ม",
+      "mode": "human",
+      "status": "open",
+      "unread": 0,
+      "createdAt": 1782440460000,
+      "lastMessage": "เปลี่ยนที่อยู่จัดส่งได้ไหมครับ",
+      "lastMessageAt": 1782440460000,
+      "phone": "085-111-2222",
+      "email": "em@example.com",
+      "source": "LINE Official",
+      "tags": [
+        "เปลี่ยนที่อยู่"
+      ],
+      "notes": "",
+      "avatarUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
+      "orders": [],
+      "internalNotes": []
+    },
+    "conv_jan": {
+      "id": "conv_jan",
+      "customerName": "คุณแจน",
+      "mode": "bot",
+      "status": "closed",
+      "unread": 0,
+      "createdAt": 1782379200000,
+      "lastMessage": "ขอบคุณค่ะ",
+      "lastMessageAt": 1782379200000,
+      "phone": "086-333-4444",
+      "email": "jan@example.com",
+      "source": "Web Chat",
+      "tags": [],
+      "notes": "",
+      "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+      "orders": [],
+      "internalNotes": []
+    },
+    "conv_beam": {
+      "id": "conv_beam",
+      "customerName": "คุณบีม",
+      "mode": "human",
+      "status": "open",
+      "unread": 0,
+      "createdAt": 1782376800000,
+      "lastMessage": "สอบถามขนาดสินค้า",
+      "lastMessageAt": 1782376800000,
+      "phone": "087-555-6666",
+      "email": "beam@example.com",
+      "source": "LINE Official",
+      "tags": [
+        "สอบถามขนาด"
+      ],
+      "notes": "",
+      "avatarUrl": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150",
+      "orders": [],
+      "internalNotes": []
+    },
+    "conv_fah": {
+      "id": "conv_fah",
+      "customerName": "ลูกค้า คุณฟ้า",
+      "mode": "bot",
+      "status": "open",
+      "unread": 0,
+      "createdAt": 1782371700000,
+      "lastMessage": "มีโปรโมชันอะไรบ้างคะ",
+      "lastMessageAt": 1782371700000,
+      "phone": "088-777-8888",
+      "email": "fah@example.com",
+      "source": "Web Chat",
+      "tags": [
+        "สนใจโปรโมชัน"
+      ],
+      "notes": "",
+      "avatarUrl": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150",
+      "orders": [],
+      "internalNotes": []
+    },
+    "conv_top": {
+      "id": "conv_top",
+      "customerName": "คุณท็อป",
+      "mode": "human",
+      "status": "open",
+      "unread": 0,
+      "createdAt": 1782275400000,
+      "lastMessage": "ต้องการคืนสินค้า",
+      "lastMessageAt": 1782275400000,
+      "phone": "089-999-0000",
+      "email": "top@example.com",
+      "source": "LINE Official",
+      "tags": [
+        "คืนสินค้า"
+      ],
+      "notes": "",
+      "avatarUrl": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150",
+      "orders": [],
+      "internalNotes": []
+    }
+  },
+  "messages": {
+    "conv_ploy": [
+      {
+        "id": "msg_p1",
+        "conversationId": "conv_ploy",
+        "sender": "customer",
+        "text": "สวัสดีค่ะ\nสอบถามเกี่ยวกับกระเป๋าเป้ค่ะ",
+        "createdAt": 1782444600000
+      },
+      {
+        "id": "msg_p2",
+        "conversationId": "conv_ploy",
+        "sender": "bot",
+        "text": "สวัสดีค่ะ 😊\nยินดีให้บริการนะคะ\nลูกค้าสนใจสอบถามเรื่องไหนเป็นพิเศษ แจ้งแอดมินได้เลยค่ะ",
+        "createdAt": 1782444660000
+      },
+      {
+        "id": "msg_p3",
+        "conversationId": "conv_ploy",
+        "sender": "customer",
+        "text": "ต้องการทราบว่ารุ่นนี้ใส่โน้ตบุ๊ก 15.6 นิ้วได้ไหมคะ แล้วมีช่องใส่ขวดน้ำไหมคะ",
+        "createdAt": 1782444660000
+      },
+      {
+        "id": "msg_p4",
+        "conversationId": "conv_ploy",
+        "sender": "admin",
+        "text": "รุ่นนี้ใส่โน้ตบุ๊ก 15.6 นิ้วได้ค่ะ\nมีช่องใส่ขวดน้ำด้านข้าง 2 ช่องเลยค่ะ",
+        "createdAt": 1782444720000
+      },
+      {
+        "id": "msg_p5",
+        "conversationId": "conv_ploy",
+        "sender": "admin",
+        "kind": "image",
+        "text": "ตามภาพเลยค่ะ 😊",
+        "mediaUrl": "/backpack.png",
+        "createdAt": 1782444720000
+      },
+      {
+        "id": "msg_p6",
+        "conversationId": "conv_ploy",
+        "sender": "customer",
+        "text": "ขอบคุณค่ะ สนใจสั่งซื้อ 1 ใบค่ะ",
+        "createdAt": 1782444780000
+      }
+    ],
+    "conv_nont": [
+      {
+        "id": "msg_n1",
+        "conversationId": "conv_nont",
+        "sender": "customer",
+        "text": "ขอใบกำกับภาษีได้ไหมครับ",
+        "createdAt": 1782443880000
+      }
+    ],
+    "conv_pan": [
+      {
+        "id": "msg_pa1",
+        "conversationId": "conv_pan",
+        "sender": "customer",
+        "text": "สินค้าจะส่งวันไหนคะ",
+        "createdAt": 1782441900000
+      }
+    ],
+    "conv_em": [
+      {
+        "id": "msg_e1",
+        "conversationId": "conv_em",
+        "sender": "customer",
+        "text": "เปลี่ยนที่อยู่จัดส่งได้ไหมครับ",
+        "createdAt": 1782440460000
+      }
+    ],
+    "conv_jan": [
+      {
+        "id": "msg_j1",
+        "conversationId": "conv_jan",
+        "sender": "customer",
+        "text": "ขอบคุณค่ะ",
+        "createdAt": 1782379200000
+      }
+    ],
+    "conv_beam": [
+      {
+        "id": "msg_b1",
+        "conversationId": "conv_beam",
+        "sender": "customer",
+        "text": "สอบถามขนาดสินค้า",
+        "createdAt": 1782376800000
+      }
+    ],
+    "conv_fah": [
+      {
+        "id": "msg_f1",
+        "conversationId": "conv_fah",
+        "sender": "customer",
+        "text": "มีโปรโมชันอะไรบ้างคะ",
+        "createdAt": 1782371700000
+      }
+    ],
+    "conv_top": [
+      {
+        "id": "msg_t1",
+        "conversationId": "conv_top",
+        "sender": "customer",
+        "text": "ต้องการคืนสินค้า",
+        "createdAt": 1782275400000
+      }
+    ]
+  },
+  "seq": 20
+}
