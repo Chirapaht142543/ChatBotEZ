@@ -90,6 +90,10 @@ let customerEmail = urlParams.get('email') || '';
 let customerPhone = urlParams.get('phone') || '';
 let customerAvatar = urlParams.get('avatar') || urlParams.get('avatarUrl') || '';
 
+// คิวข้อความที่เว็บหลักสั่งส่งอัตโนมัติ (เช่น แจ้งปัญหาออเดอร์) ก่อนที่แชทจะพร้อม
+let initDone = false;
+let pendingSends = [];
+
 function fmt(ts){ return new Date(ts).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}); }
 
 function render(m){
@@ -124,12 +128,17 @@ async function init(){
     const m = JSON.parse(e.data);
     if(m.sender!=='customer') render(m); // ข้อความเราเอง render ไปแล้วตอนส่ง
   });
+
+  // แชทพร้อมแล้ว — ส่งข้อความที่เว็บหลักฝากไว้ก่อนหน้า (เช่น แจ้งปัญหาออเดอร์)
+  initDone = true;
+  const queued = pendingSends.slice();
+  pendingSends = [];
+  for (const t of queued) { await sendText(t); }
 }
 
-async function send(){
-  const text = inputEl.value.trim();
+async function sendText(rawText){
+  const text = (rawText || '').trim();
   if(!text) return;
-  inputEl.value='';
   render({sender:'customer',text,createdAt:Date.now()});
   typingEl.style.display='block';
   await fetch(API+'/api/messages',{method:'POST',headers:{'content-type':'application/json'},
@@ -144,8 +153,21 @@ async function send(){
     })});
 }
 
+async function send(){
+  const text = inputEl.value.trim();
+  if(!text) return;
+  inputEl.value='';
+  await sendText(text);
+}
+
 // ฟังข้อความจากเว็บหลัก (Parent window) เพื่อรับข้อมูลผู้ใช้แบบเรียลไทม์ (เมื่อฝัง Widget ใน iframe)
 window.addEventListener('message', async (e) => {
+  // ข้อความที่เว็บหลักสั่งให้ส่งอัตโนมัติ (เช่น รายละเอียดออเดอร์ที่แจ้งปัญหา)
+  if (e.data && e.data.type === 'hb-send' && e.data.text) {
+    if (initDone) { await sendText(e.data.text); }
+    else { pendingSends.push(e.data.text); }
+    return;
+  }
   if (e.data && e.data.type === 'setProfile') {
     const { name, email, phone, avatarUrl } = e.data;
     if (name) customerName = name;
