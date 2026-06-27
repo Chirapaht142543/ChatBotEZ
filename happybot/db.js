@@ -55,10 +55,41 @@ const DEFAULT_RULES = [
 const DEFAULT_SETTINGS = {
   aiEnabled: false,
   aiSystemPrompt: 'คุณเป็นแอดมินร้านขายกระเป๋าและของใช้ออนไลน์ ตอบลูกค้าด้วยภาษาไทยที่สุภาพ กระชับ เป็นกันเอง ลงท้ายด้วย "ค่ะ" ถ้าไม่แน่ใจหรือเป็นเรื่องเฉพาะคำสั่งซื้อ ให้บอกว่าจะให้แอดมินช่วยตรวจสอบให้นะคะ',
-  handoffKeywords: ['แอดมิน', 'คนจริง', 'เจ้าหน้าที่', 'พนักงาน', 'ติดต่อคน']
+  aiProductPrompt: '',
+  aiPromotionPrompt: '',
+  handoffKeywords: ['แอดมิน', 'คนจริง', 'เจ้าหน้าที่', 'พนักงาน', 'ติดต่อคน'],
+  channels: {
+    web: {
+      name: 'เว็บไซต์ (Web Widget)',
+      enabled: true,
+      systemPrompt: 'คุณเป็นแอดมินร้านกระเป๋าออนไลน์ ให้บริการข้อมูลแชทบนหน้าเว็บไซต์โดยตรง ตอบด้วยความสุภาพ รวดเร็ว และกระชับ ลงท้ายด้วย "ค่ะ"',
+      productPrompt: '',
+      promotionPrompt: ''
+    },
+    facebook: {
+      name: 'Facebook Page',
+      enabled: true,
+      systemPrompt: 'คุณเป็นแอดมินเพจ Facebook ตอบสไตล์เป็นกันเอง น่ารัก สนุกสนาน คอยปิดการขาย มีความตื่นเต้น และใช้ Emoji ประกอบในการคุย ลงท้ายด้วย "จ้า"',
+      productPrompt: '',
+      promotionPrompt: ''
+    },
+    line: {
+      name: 'LINE OA',
+      enabled: true,
+      systemPrompt: 'คุณเป็นแอดมินระบบ LINE Official Account ตอบอย่างเป็นระเบียบ มีการตอบกลับทีละหัวข้อ สุภาพ มีความเป็นทางการและลงท้ายด้วย "ครับ/ค่ะ"',
+      productPrompt: '',
+      promotionPrompt: ''
+    }
+  }
 };
 
-const DEFAULT_DATA = { conversations: {}, messages: {}, seq: 0, rules: DEFAULT_RULES, settings: DEFAULT_SETTINGS };
+const DEFAULT_USERS = [
+  { id: 1, name: 'แอดมินรวิภา (เจ้าของร้าน)', email: 'rawipa@happyshop.com', password: '123', role: 'Owner', online: true, avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150' },
+  { id: 2, name: 'น้องพลอย (ผู้จัดการ)', email: 'ploy.admin@happyshop.com', password: '123', role: 'Manager', online: true, avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' },
+  { id: 3, name: 'น้องป่าน (แอดมิน)', email: 'pan.support@happyshop.com', password: '123', role: 'Agent', online: false, avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150' }
+];
+
+const DEFAULT_DATA = { conversations: {}, messages: {}, seq: 0, rules: DEFAULT_RULES, settings: DEFAULT_SETTINGS, users: DEFAULT_USERS };
 
 let cache = null;       // เก็บข้อมูลในหน่วยความจำ
 let writeTimer = null;  // หน่วงการเขียนไฟล์ (debounce) กันเขียนถี่เกินไป
@@ -74,6 +105,19 @@ function load() {
     }
     if (!cache.settings) {
       cache.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+    } else {
+      Object.keys(DEFAULT_SETTINGS).forEach(key => {
+        if (cache.settings[key] === undefined) {
+          cache.settings[key] = DEFAULT_SETTINGS[key];
+        }
+      });
+    }
+    if (!cache.users) {
+      cache.users = JSON.parse(JSON.stringify(DEFAULT_USERS));
+    } else {
+      cache.users.forEach(u => {
+        if (!u.password) u.password = '123';
+      });
     }
   } catch (e) {
     cache = JSON.parse(JSON.stringify(DEFAULT_DATA));
@@ -83,6 +127,10 @@ function load() {
 }
 
 function flushNow() {
+  const dir = path.dirname(DATA_FILE);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
   fs.writeFileSync(DATA_FILE, JSON.stringify(cache, null, 2), 'utf8');
 }
 
@@ -114,7 +162,7 @@ function getConversation(id) {
   return load().conversations[id] || null;
 }
 
-function createConversation({ id, customerName, email, phone, avatarUrl }) {
+function createConversation({ id, customerName, email, phone, avatarUrl, topic, customerId, source }) {
   const d = load();
   const convId = id || nextId('conv');
   if (d.conversations[convId]) {
@@ -123,18 +171,29 @@ function createConversation({ id, customerName, email, phone, avatarUrl }) {
     if (email) d.conversations[convId].email = email;
     if (phone) d.conversations[convId].phone = phone;
     if (avatarUrl) d.conversations[convId].avatarUrl = avatarUrl;
+    if (topic) d.conversations[convId].topic = topic;
+    if (customerId) d.conversations[convId].customerId = customerId;
+    if (source) d.conversations[convId].source = source;
     scheduleWrite();
     return d.conversations[convId];
   }
   d.conversations[convId] = {
     id: convId,
+    customerId: customerId || '',
     customerName: customerName || 'ลูกค้าใหม่',
     email: email || '',
     phone: phone || '',
     avatarUrl: avatarUrl || '',
+    topic: topic || '',
+    source: source || 'Web Chat',
+    rating: null,
     mode: 'bot',            // 'bot' = บอทตอบ, 'human' = แอดมินตอบเอง
     status: 'open',         // open | waiting | closed
     unread: 0,
+    tags: [],
+    starred: false,
+    notes: '',
+    internalNotes: [],
     createdAt: Date.now(),
     lastMessage: '',
     lastMessageAt: Date.now(),
@@ -153,27 +212,36 @@ function updateConversation(id, patch) {
   return conv;
 }
 
+function clearAllData() {
+  const d = load();
+  d.conversations = {};
+  d.messages = {};
+  flushNow();
+}
+
 // ---------- ข้อความ (message) ----------
 
 function getMessages(conversationId) {
   return load().messages[conversationId] || [];
 }
 
-function addMessage(conversationId, { sender, text, kind }) {
+function addMessage(conversationId, { sender, text, kind, senderName, mediaUrl }) {
   const d = load();
   if (!d.conversations[conversationId]) return null;
   const msg = {
     id: nextId('msg'),
     conversationId,
     sender,                 // 'customer' | 'admin' | 'bot'
+    senderName: senderName || null,
     kind: kind || 'text',
+    mediaUrl: mediaUrl || null,
     text,
     createdAt: Date.now(),
   };
   d.messages[conversationId].push(msg);
 
   const conv = d.conversations[conversationId];
-  conv.lastMessage = text;
+  conv.lastMessage = kind === 'image' ? '[รูปภาพ]' : kind === 'file' ? '[ไฟล์แนบ]' : text;
   conv.lastMessageAt = msg.createdAt;
   if (sender === 'customer') conv.unread += 1;
   scheduleWrite();
@@ -204,6 +272,18 @@ function saveBotSettings(settings) {
   return d.settings;
 }
 
+// ---------- ผู้ใช้งาน (Users) ----------
+function getUsers() {
+  return load().users || [];
+}
+
+function saveUsers(users) {
+  const d = load();
+  d.users = users;
+  scheduleWrite();
+  return d.users;
+}
+
 module.exports = {
   listConversations,
   getConversation,
@@ -215,4 +295,6 @@ module.exports = {
   saveRules,
   getBotSettings,
   saveBotSettings,
+  getUsers,
+  saveUsers,
 };

@@ -1,0 +1,444 @@
+/* Channel Prompts Stylesheet */
+
+.prompts-container {
+  padding: 24px 32px;
+  background-color: #f8fafc;
+  height: calc(100vh - 60px);
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.prompts-header {
+  margin-bottom: 20px;
+}
+
+.prompts-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.prompts-subtitle {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* Two-Column Grid Layout */
+.prompts-layout-grid {
+  display: grid;
+  grid-template-columns: 2.1fr 0.9fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.prompts-main-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Global AI Switch Card */
+.global-ai-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px 24px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.01);
+}
+
+/* Premium Panel with Dynamic Themes */
+.prompts-panel {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.01);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+/* Base Accent Variables for Themes */
+.prompts-panel.web {
+  --channel-accent: #6366f1;
+  --channel-accent-glow: rgba(99, 102, 241, 0.12);
+  --channel-tab-bg: #f5f3ff;
+}
+
+.prompts-panel.facebook {
+  --channel-accent: #1877f2;
+  --channel-accent-glow: rgba(24, 119, 242, 0.12);
+  --channel-tab-bg: #f0f9ff;
+}
+
+.prompts-panel.line {
+  --channel-accent: #06c755;
+  --channel-accent-glow: rgba(6, 199, 85, 0.12);
+  --channel-tab-bg: #f0fdf4;
+}
+
+/* Channel Navigation Tabs Header */
+.channel-tabs {
+  display: flex;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0 8px;
+}
+
+.channel-tab {
+  background: none;
+  border: none;
+  outline: none;
+  padding: 16px 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 3px solid transparent;
+  transition: all 0.25s ease;
+}
+
+.channel-tab:hover {
+  color: #0f172a;
+}
+
+.channel-tab.active {
+  color: var(--channel-accent);
+  border-bottom-color: var(--channel-accent);
+  background-color: #fff;
+}
+
+.tab-icon {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s;
+}
+
+.channel-tab:hover .tab-icon {
+  transform: scale(1.08);
+}
+
+/* Form Container Section */
+.form-container {
+  padding: 24px 32px;
+}
+
+/* Dynamic Toggle Row styling */
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.toggle-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 3px;
+}
+
+.toggle-desc {
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+/* Custom Checkbox Toggle Switch */
+.switch-toggle {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+}
+
+.switch-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: .3s;
+  border-radius: 34px;
+}
+
+.switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+input:checked + .switch-slider {
+  background-color: var(--channel-accent);
+}
+
+/* Fallback for global switch inside .global-ai-card which has no dynamic channel accent */
+.global-ai-card input:checked + .switch-slider {
+  background-color: #2563eb;
+}
+
+input:checked + .switch-slider:before {
+  transform: translateX(22px);
+}
+
+.form-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 16px 0 24px 0;
+}
+
+/* Form inputs & fields groups */
+.prompt-fields-group {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.form-label .required {
+  color: #ef4444;
+}
+
+.input-helper {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 2px;
+}
+
+.form-textarea {
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: #334155;
+  outline: none;
+  resize: vertical;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  line-height: 1.5;
+}
+
+.form-textarea:focus {
+  border-color: var(--channel-accent);
+  box-shadow: 0 0 0 4px var(--channel-accent-glow);
+}
+
+/* Form Save & Success Message Elements */
+.form-footer {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-top: 28px;
+}
+
+.btn-save-prompts {
+  background: var(--channel-accent);
+  color: #fff;
+  border: none;
+  outline: none;
+  padding: 11px 22px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s;
+}
+
+.btn-save-prompts:hover {
+  filter: brightness(0.95);
+}
+
+.save-toast-msg {
+  font-size: 13px;
+  font-weight: 600;
+  color: #16a34a;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.save-toast-msg.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Right Side Column Cards */
+.prompts-side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* API Status Card styling */
+.api-status-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.01);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.3s ease;
+}
+
+.api-status-card.configured {
+  background-color: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.api-status-card.missing {
+  background-color: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.status-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #cbd5e1;
+}
+
+.api-status-card.configured .status-dot-indicator {
+  background-color: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.api-status-card.missing .status-dot-indicator {
+  background-color: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+.status-card-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.status-card-desc {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.api-status-card.configured .status-card-title { color: #166534; }
+.api-status-card.configured .status-card-desc { color: #166534; }
+
+.api-status-card.missing .status-card-title { color: #9a3412; }
+.api-status-card.missing .status-card-desc { color: #9a3412; }
+
+/* Guide Card styling */
+.guide-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.01);
+}
+
+.guide-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.guide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.guide-step {
+  display: flex;
+  gap: 12px;
+  font-size: 12.5px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.guide-number {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.guide-code {
+  font-family: monospace;
+  background: #f1f5f9;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* Animations */
+@keyframes panelFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.prompts-layout-grid {
+  animation: panelFadeIn 0.3s ease-out forwards;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

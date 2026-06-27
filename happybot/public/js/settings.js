@@ -3,53 +3,8 @@
 const API = location.origin;
 
 
-// Mock ข้อมูลทีมแอดมินสำหรับจำลองการทำงาน
-let teamMembers = [
-  { id: 1, name: 'แอดมินรวิภา (เจ้าของร้าน)', email: 'rawipa@happyshop.com', role: 'Owner', online: true, avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150' },
-  { id: 2, name: 'น้องพลอย (ผู้จัดการ)', email: 'ploy.admin@happyshop.com', role: 'Manager', online: true, avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' },
-  { id: 3, name: 'น้องป่าน (แอดมิน)', email: 'pan.support@happyshop.com', role: 'Agent', online: false, avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150' }
-];
-
-// Loader สำหรับ HTML components
-async function loadComponents() {
-  const elements = document.querySelectorAll('[data-include]');
-  const promises = Array.from(elements).map(async (el) => {
-    const file = el.getAttribute('data-include');
-    try {
-      const res = await fetch(file);
-      if (res.ok) {
-        const text = await res.text();
-        const placeholder = document.createElement('div');
-        placeholder.innerHTML = text;
-        const child = placeholder.firstElementChild;
-        el.replaceWith(child);
-      } else {
-        console.error('Failed to load component:', file);
-      }
-    } catch (err) {
-      console.error('Error loading component:', file, err);
-    }
-  });
-  await Promise.all(promises);
-  highlightSidebar();
-  updateSidebarBadgeCount();
-}
-
-function highlightSidebar() {
-  const currentPath = window.location.pathname;
-  const links = document.querySelectorAll('.sidebar-menu a');
-  links.forEach(link => {
-    const href = link.getAttribute('href');
-    if (href) {
-      const isDefaultPage = (currentPath === '/' || currentPath.endsWith('/')) && href === 'admin.html';
-      if (currentPath.endsWith(href) || isDefaultPage) {
-        link.classList.add('active');
-      } else {
-        link.classList.remove('active');
-      }
-    }
-  });
-}
+// ข้อมูลทีมแอดมินสำหรับจำลองการทำงานดึงจาก API
+let teamMembers = [];
 
 // อัปเดตตัวเลขแจ้งเตือนแชทค้างใน Sidebar (ใช้เพื่อความสมบูรณ์แบบ)
 async function updateSidebarBadgeCount() {
@@ -224,9 +179,15 @@ function renderTeamMembers() {
       <div class="team-info">
         <div class="team-name">${escapeHtml(member.name)}</div>
         <div class="team-email">${escapeHtml(member.email)}</div>
-        <span class="team-badge ${member.role.toLowerCase()}">
-          ${member.role === 'Owner' ? 'เจ้าของร้าน' : member.role === 'Manager' ? 'ผู้จัดการ' : 'แอดมิน'}
-        </span>
+        ${member.role === 'Owner' ? `
+          <span class="team-badge owner">เจ้าของร้าน</span>
+        ` : `
+          <select class="form-select team-role-select" data-id="${member.id}" style="width: auto; padding: 2px 8px; font-size: 12px; height: 28px; margin-top: 4px;">
+            <option value="Agent" ${member.role === 'Agent' ? 'selected' : ''}>แอดมิน</option>
+            <option value="Manager" ${member.role === 'Manager' ? 'selected' : ''}>ผู้จัดการ</option>
+            <option value="Owner" ${member.role === 'Owner' ? 'selected' : ''}>เจ้าของร้าน</option>
+          </select>
+        `}
       </div>
       ${member.role !== 'Owner' ? `
         <button type="button" class="btn-remove-member" title="ลบสมาชิก" data-id="${member.id}">
@@ -236,29 +197,90 @@ function renderTeamMembers() {
     </div>
   `).join('');
 
+  // มอบหมายฟังก์ชันเปลี่ยนบทบาทสมาชิก
+  listEl.querySelectorAll('.team-role-select').forEach(select => {
+    select.onchange = (e) => {
+      const id = parseInt(e.currentTarget.dataset.id);
+      const newRole = e.currentTarget.value;
+      const originalList = [...teamMembers];
+      
+      // อัปเดตข้อมูลในอาร์เรย์
+      teamMembers = teamMembers.map(m => {
+        if (m.id === id) {
+          return { ...m, role: newRole };
+        }
+        return m;
+      });
+      
+      // บันทึกไปฝั่งเซิร์ฟเวอร์
+      fetch(API + '/api/users', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ users: teamMembers })
+      }).then(res => {
+        if (res.ok) {
+          renderTeamMembers();
+          showToast('เปลี่ยนบทบาทสำเร็จ!', 'อัปเดตสิทธิ์การใช้งานของสมาชิกทีมเรียบร้อย');
+        } else {
+          teamMembers = originalList;
+          renderTeamMembers();
+          alert('เกิดข้อผิดพลาดในการเปลี่ยนบทบาทบนเซิร์ฟเวอร์');
+        }
+      }).catch(err => {
+        teamMembers = originalList;
+        renderTeamMembers();
+        alert('เกิดข้อผิดพลาดในการเชื่อมต่อเพื่อเปลี่ยนบทบาท');
+      });
+    };
+  });
+
   // มอบหมายฟังก์ชันลบสมาชิก
   listEl.querySelectorAll('.btn-remove-member').forEach(btn => {
     btn.onclick = (e) => {
       const id = parseInt(e.currentTarget.dataset.id);
       if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบสมาชิกทีมรายนี้ออกจากระบบ?')) {
+        const originalList = [...teamMembers];
         teamMembers = teamMembers.filter(m => m.id !== id);
         renderTeamMembers();
-        showToast('ลบสมาชิกสำเร็จ!', 'ลบสมาชิกแอดมินออกจากทีมสำเร็จเรียบร้อย');
+        
+        fetch(API + '/api/users', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ users: teamMembers })
+        }).then(res => {
+          if (res.ok) {
+            showToast('ลบสมาชิกสำเร็จ!', 'ลบสมาชิกแอดมินออกจากทีมสำเร็จเรียบร้อย');
+          } else {
+            teamMembers = originalList;
+            renderTeamMembers();
+            alert('เกิดข้อผิดพลาดในการลบสมาชิกจากเซิร์ฟเวอร์');
+          }
+        }).catch(err => {
+          teamMembers = originalList;
+          renderTeamMembers();
+          alert('เกิดข้อผิดพลาดในการเชื่อมต่อเพื่อลบสมาชิก');
+        });
       }
     };
   });
 }
 
-// เชิญสมาชิกใหม่เข้าร่วมทีม (Mock)
+// เชิญสมาชิกใหม่เข้าร่วมทีม
 function initInviteMember() {
   const btn = document.getElementById('btnInviteMember');
   btn.onclick = () => {
     const emailInput = document.getElementById('newMemberEmail');
+    const passwordInput = document.getElementById('newMemberPassword');
     const roleSelect = document.getElementById('newMemberRole');
     const email = emailInput.value.trim();
+    const password = passwordInput.value;
     
     if (!email) {
       alert('กรุณากรอกอีเมลของทีมงานที่ต้องการเชิญ');
+      return;
+    }
+    if (!password) {
+      alert('กรุณากำหนดรหัสผ่านสำหรับสมาชิกใหม่');
       return;
     }
 
@@ -270,14 +292,33 @@ function initInviteMember() {
       email: email,
       role: roleSelect.value,
       online: false,
+      password: password,
       avatar: `https://eu.ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f1f5f9&color=1e293b`
     };
 
+    const originalList = [...teamMembers];
     teamMembers.push(newMember);
     renderTeamMembers();
-    emailInput.value = '';
-    
-    showToast('ส่งคำเชิญแล้ว!', `ส่งรายละเอียดการรับสิทธิ์ไปที่ ${email} สำเร็จ`);
+
+    fetch(API + '/api/users', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ users: teamMembers })
+    }).then(res => {
+      if (res.ok) {
+        emailInput.value = '';
+        passwordInput.value = '';
+        showToast('ส่งคำเชิญแล้ว!', `ส่งรายละเอียดการรับสิทธิ์ไปที่ ${email} สำเร็จ`);
+      } else {
+        teamMembers = originalList;
+        renderTeamMembers();
+        alert('ไม่สามารถเพิ่มสมาชิกทีมไปยังเซิร์ฟเวอร์ได้');
+      }
+    }).catch(err => {
+      teamMembers = originalList;
+      renderTeamMembers();
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์เพื่อเพิ่มสมาชิก');
+    });
   };
 }
 
@@ -473,6 +514,14 @@ function initWidgetSettings() {
 // เริ่มต้นแอปพลิเคชัน
 async function startApp() {
   await loadComponents();
+  
+  // Fetch users from API
+  try {
+    const res = await fetch('/api/users');
+    if (res.ok) teamMembers = await res.json();
+  } catch (err) {
+    console.error('Failed to load users', err);
+  }
   
   // ตั้งค่า Events
   initTabNavigation();

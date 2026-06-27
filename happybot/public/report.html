@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HappyBot — รายงานและการวิเคราะห์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/report.css">
+</head>
+<body>
+  <!-- Sidebar -->
+  <div data-include="components/sidebar.html"></div>
+
+  <!-- Main Wrapper -->
+  <div class="main-wrapper">
+    <!-- Top Header -->
+    <div data-include="components/top-header.html"></div>
+
+    <!-- Main Content Area -->
+    <main class="report-container">
+      
+      <!-- Page Header & Filtering -->
+      <section class="report-title-row">
+        <div class="report-title-group">
+          <h1>รายงาน</h1>
+          <p>ภาพรวมและสถิติการให้บริการ</p>
+        </div>
+        
+        <!-- Controls -->
+        <div class="report-actions">
+          <button class="date-selector-btn" id="dateSelectorBtn">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            20 พ.ค. 2567 - 20 พ.ค. 2567
+          </button>
+          
+          <button class="btn-export-report" id="btnExport">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            ส่งออกรายงาน
+          </button>
+        </div>
+      </section>
+
+      <!-- Sub Navigation Tabs -->
+      <section class="report-sub-tabs">
+        <a class="report-sub-tab active">ภาพรวม</a>
+        <a class="report-sub-tab">แชท</a>
+        <a class="report-sub-tab">การสั่งซื้อ</a>
+        <a class="report-sub-tab">แอดมิน</a>
+        <a class="report-sub-tab">บรอดแคสต์</a>
+      </section>
+
+      <!-- 6 Summary Cards -->
+      <section class="summary-grid-6">
+        <!-- Card 1: Total Chats -->
+        <div class="summary-card-mini">
+          <div class="summary-card-top-row">
+            <span>จำนวนแชททั้งหมด</span>
+            <div class="summary-card-icon-box blue">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+          </div>
+          <div class="summary-card-val" id="statTotalChats">0</div>
+          <div class="summary-card-trend">
+            <span class="trend-pct up" id="statTotalChatsPct">↑ 18.6%</span>
+            <span class="trend-desc" id="statTotalChatsPrev">จากช่วงก่อนหน้า 1,052 แชท</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Replied Chats -->
+        <div class="summary-card-mini">
+          <div class="summary-card-top-row">
+            <span>แชทที่ตอบกลับ</span>
+            <div class="summary-card-icon-box green">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="21 15 16 10 5 21"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+            </div>
+          </div>
+          <div class="summary-card-val" id="statRepliedChats">0</div>
+          <div class="summary-card-trend">
+            <span class="trend-pct up" id="statRepliedChatsPct">↑ 16.2%</span>
+            <span class="trend-desc" id="statRepliedChatsPrev">จากช่วงก่อนหน้า 948 แชท</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Avg Response Time -->
+        <div class="summary-card-mini">
+          <div class="summary-card-top-row">
+            <span>เวลาตอบกลับเฉลี่ย</span>
+            <div class="summary-card-icon-box blue">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+          </div>
+          <div class="summary-card-val" id="statAvgTime">1m 32s</div>
+          <div class="summary-card-trend">
+            <span class="trend-pct up" style="color: #16a34a;">↓ 22.4%</span>
+            <span class="trend-desc" id="statAvgTimePrev">จากช่วงก่อนหน้า 1m 58s</span>
+          </div>
+        </div>
+
+        <!-- Card 4: New Customers -->
+        <div class="summary-card-mini">
+          <div class="summary-card-top-row">
+            <span>ลูกค้าใหม่</span>
+            <div class="summary-card-icon-box blue">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+          </div>
+          <div class="summary-card-val" id="statNewCustomers">0</div>
+          <div class="summary-card-trend">
+            <span class="trend-pct up" id="statNewCustomersPct">↑ 24.7%</span>
+            <span class="trend-desc" id="statNewCustomersPrev">จากช่วงก่อนหน้า 285 คน</span>
+          </div>
+        </div>
+
+        <!-- Card 5: Total Revenue -->
+        <div class="summary-card-mini">
+          <div class="summary-card-top-row">
+            <span>ยอดสั่งซื้อรวม</span>
+            <div class="summary-card-icon-box orange">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M15 9H9.5a2.5 2.5 0 0 0 0 5h5a2.5 2.5 0 0 1 0 5H8"/></svg>
+            </div>
+          </div>
+          <div class="summary-card-val" id="statRevenue">฿0</div>
+          <div class="summary-card-trend">
+            <span class="trend-pct up" id="statRevenuePct">↑ 31.5%</span>
+            <span class="trend-desc" id="statRevenuePrev">จากช่วงก่อนหน้า ฿68,020</span>
+          </div>
+        </div>
+
+        <!-- Card 6: Close Deal Rate -->
+        <div class="summary-card-mini">
+          <div class="summary-card-top-row">
+            <span>อัตราการปิดการขาย</span>
+            <div class="summary-card-icon-box purple">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8l4 4-4 4M8 12h8"/></svg>
+            </div>
+          </div>
+          <div class="summary-card-val" id="statConvRate">0%</div>
+          <div class="summary-card-trend">
+            <span class="trend-pct up" id="statConvRatePct">↑ 2.3%</span>
+            <span class="trend-desc" id="statConvRatePrev">จากช่วงก่อนหน้า 10.4%</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Row 4: Line Chart (Chat Volume) + Channels Donut -->
+      <section class="main-charts-grid">
+        <!-- Line Chart -->
+        <div class="dashboard-panel">
+          <div class="panel-header-row">
+            <div class="panel-title-group">
+              <h3>จำนวนแชท</h3>
+            </div>
+            <select class="panel-select" id="dateRangeSelect">
+              <option value="daily">รายวัน</option>
+              <option value="weekly">รายสัปดาห์</option>
+            </select>
+          </div>
+          <div class="line-chart-row-container">
+            <!-- Y-Axis Labels Column -->
+            <div class="line-chart-y-axis">
+              <span>400</span>
+              <span>300</span>
+              <span>200</span>
+              <span>100</span>
+              <span>0</span>
+            </div>
+            
+            <div class="line-chart-main-content">
+              <!-- SVG Chart -->
+              <svg class="line-chart-svg" viewBox="0 0 500 150" preserveAspectRatio="none">
+                <!-- Grid lines -->
+                <line x1="0" y1="10" x2="500" y2="10" stroke="#f8fafc" stroke-width="1.5" />
+                <line x1="0" y1="42.5" x2="500" y2="42.5" stroke="#f1f5f9" stroke-width="1.5" />
+                <line x1="0" y1="75" x2="500" y2="75" stroke="#f1f5f9" stroke-width="1.5" />
+                <line x1="0" y1="107.5" x2="500" y2="107.5" stroke="#f1f5f9" stroke-width="1.5" />
+                <line x1="0" y1="140" x2="500" y2="140" stroke="#cbd5e1" stroke-width="2" />
+                
+                <!-- Total Chats Line (Blue) -->
+                <path id="lineTotalPath" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round" d="" />
+                
+                <!-- Replied Chats Line (Green) -->
+                <path id="lineRepliedPath" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" d="" />
+                
+                <!-- Dots generated dynamically -->
+                <g id="chartGroupInteractive"></g>
+              </svg>
+              
+              <!-- X-Axis Labels Row -->
+              <div class="line-chart-x-axis">
+                <span>14 พ.ค.</span>
+                <span>15 พ.ค.</span>
+                <span>16 พ.ค.</span>
+                <span>17 พ.ค.</span>
+                <span>18 พ.ค.</span>
+                <span>19 พ.ค.</span>
+                <span>20 พ.ค.</span>
+              </div>
+            </div>
+          </div>
+          <!-- Line chart legend indicators -->
+          <div style="display: flex; gap: 20px; justify-content: flex-start; padding-left: 45px; margin-top: 8px; font-size: 11px;">
+            <div style="display: flex; align-items: center; gap: 6px; font-weight: 600; color: #475569;">
+              <span style="width: 12px; height: 3px; background: #2563eb; display: inline-block; border-radius: 2px;"></span>
+              แชททั้งหมด
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; font-weight: 600; color: #475569;">
+              <span style="width: 12px; height: 3px; background: #16a34a; display: inline-block; border-radius: 2px;"></span>
+              แชทที่ตอบกลับ
+            </div>
+          </div>
+        </div>
+
+        <!-- Channels Donut Chart -->
+        <div class="dashboard-panel">
+          <div class="panel-header-row">
+            <div class="panel-title-group">
+              <h3>ช่องทางที่ลูกค้าใช้</h3>
+            </div>
+            <select class="panel-select">
+              <option>ทั้งหมด</option>
+            </select>
+          </div>
+          <div class="donut-container">
+            <div class="donut-chart-svg-box">
+              <svg viewBox="0 0 120 120" width="140" height="140" id="donutSvgSegments"></svg>
+              <div class="donut-center-text">
+                <div class="donut-center-val" id="donutCenterVal">1,248</div>
+                <div class="donut-center-lbl">แชททั้งหมด</div>
+              </div>
+            </div>
+
+            <!-- Legends list -->
+            <div class="chart-legend-list">
+              <div class="chart-legend-item" id="lblLineOA">
+                <span class="legend-color-label">
+                  <span class="legend-color-dot line-oa"></span>
+                  <span class="legend-label-name">LINE OA</span>
+                </span>
+                <span class="legend-val-group">
+                  <span class="legend-pct">68.5%</span>
+                  <span class="legend-count">(855)</span>
+                </span>
+              </div>
+              <div class="chart-legend-item" id="lblFacebook">
+                <span class="legend-color-label">
+                  <span class="legend-color-dot facebook"></span>
+                  <span class="legend-label-name">Facebook Messenger</span>
+                </span>
+                <span class="legend-val-group">
+                  <span class="legend-pct">18.6%</span>
+                  <span class="legend-count">(232)</span>
+                </span>
+              </div>
+              <div class="chart-legend-item" id="lblWebsite">
+                <span class="legend-color-label">
+                  <span class="legend-color-dot website"></span>
+                  <span class="legend-label-name">เว็บไซต์</span>
+                </span>
+                <span class="legend-val-group">
+                  <span class="legend-pct">9.4%</span>
+                  <span class="legend-count">(117)</span>
+                </span>
+              </div>
+              <div class="chart-legend-item" id="lblInstagram">
+                <span class="legend-color-label">
+                  <span class="legend-color-dot instagram"></span>
+                  <span class="legend-label-name">Instagram</span>
+                </span>
+                <span class="legend-val-group">
+                  <span class="legend-pct">2.1%</span>
+                  <span class="legend-count">(26)</span>
+                </span>
+              </div>
+              <div class="chart-legend-item" id="lblOthers">
+                <span class="legend-color-label">
+                  <span class="legend-color-dot others"></span>
+                  <span class="legend-label-name">อื่นๆ</span>
+                </span>
+                <span class="legend-val-group">
+                  <span class="legend-pct">1.4%</span>
+                  <span class="legend-count">(18)</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Row 5: Heatmap + Leaderboard + Status Donut -->
+      <section class="mid-charts-grid">
+        <!-- Heatmap -->
+        <div class="dashboard-panel">
+          <div class="panel-header-row">
+            <div class="panel-title-group">
+              <h3>แชทตามช่วงเวลา</h3>
+            </div>
+          </div>
+          <!-- Heatmap body -->
+          <div style="flex: 1; display: flex; flex-direction: column;">
+            <!-- X Axis labels (days) -->
+            <div class="heatmap-axis-labels">
+              <span>จ.</span>
+              <span>อ.</span>
+              <span>พ.</span>
+              <span>พฤ.</span>
+              <span>ศ.</span>
+              <span>ส.</span>
+              <span>อา.</span>
+            </div>
+
+            <!-- Heatmap Rows -->
+            <div class="heatmap-row" id="heatmap-row-00">
+              <span class="heatmap-row-lbl">00:00</span>
+              <div class="heatmap-cells"></div>
+            </div>
+            <div class="heatmap-row" id="heatmap-row-04">
+              <span class="heatmap-row-lbl">04:00</span>
+              <div class="heatmap-cells"></div>
+            </div>
+            <div class="heatmap-row" id="heatmap-row-08">
+              <span class="heatmap-row-lbl">08:00</span>
+              <div class="heatmap-cells"></div>
+            </div>
+            <div class="heatmap-row" id="heatmap-row-12">
+              <span class="heatmap-row-lbl">12:00</span>
+              <div class="heatmap-cells"></div>
+            </div>
+            <div class="heatmap-row" id="heatmap-row-16">
+              <span class="heatmap-row-lbl">16:00</span>
+              <div class="heatmap-cells"></div>
+            </div>
+            <div class="heatmap-row" id="heatmap-row-20">
+              <span class="heatmap-row-lbl">20:00</span>
+              <div class="heatmap-cells"></div>
+            </div>
+
+            <!-- Legend color indicators -->
+            <div class="heatmap-legend-row">
+              <span>น้อย</span>
+              <span class="heatmap-legend-box" style="background: #eff6ff;"></span>
+              <span class="heatmap-legend-box" style="background: #bfdbfe;"></span>
+              <span class="heatmap-legend-box" style="background: #60a5fa;"></span>
+              <span class="heatmap-legend-box" style="background: #2563eb;"></span>
+              <span class="heatmap-legend-box" style="background: #1e3a8a;"></span>
+              <span>มาก</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin Leaderboard Table -->
+        <div class="dashboard-panel">
+          <div class="panel-header-row">
+            <div class="panel-title-group">
+              <h3>แอดมินที่ตอบแชท</h3>
+            </div>
+          </div>
+          <div class="table-panel-wrapper">
+            <table class="panel-table">
+              <thead>
+                <tr>
+                  <th>แอดมิน</th>
+                  <th>แชทที่ตอบ</th>
+                  <th>อัตราการตอบ</th>
+                  <th>เวลาตอบกลับเฉลี่ย</th>
+                </tr>
+              </thead>
+              <tbody id="adminLeaderboardBody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+          <a class="link-view-all" href="#">ดูรายงานแอดมินทั้งหมด →</a>
+        </div>
+
+        <!-- Chat Status Donut -->
+        <div class="dashboard-panel">
+          <div class="panel-header-row">
+            <div class="panel-title-group">
+              <h3>สถานะการแชท</h3>
+            </div>
+            <select class="panel-select">
+              <option>ทั้งหมด</option>
+            </select>
+          </div>
+          
+          <div class="donut-container">
+            <div class="donut-chart-svg-box">
+              <svg viewBox="0 0 120 120" width="140" height="140" id="donutStatusSvgSegments"></svg>
+              <div class="donut-center-text">
+                <div class="donut-center-val" id="donutStatusCenterVal">1,248</div>
+                <div class="donut-center-lbl">แชททั้งหมด</div>
+              </div>
+            </div>
+
+            <!-- Legends list -->
+            <div class="chart-legend-list">
+              <div class="chart-legend-item" id="lblStatusDone">
+                <span class="legend-color-label">
+                  <span class="legend-color-dot status-done"></span>
+                  <span class="legend-label-name">เสร็จสิ้น</span>
+                </span>
+                <span class="legend-val-group">
+                  <span class="legend-pct">72.4%</span>
+                  <span class="legend-count">(903)</span>
+                </span>
+              </div>
+              <div class="chart-legend-item" id="lblStatusActive">
+                <span class="legend-color-label">
+                  <span class="legend-color-dot status-active"></span>
+                  <span class="legend-label-name">กำลังดำเนินการ</span>
+                </span>
+                <span class="legend-val-group">
+                  <span class="legend-pct">20.1%</span>
+                  <span class="legend-count">(251)</span>
+                </span>
+              </div>
+              <div class="chart-legend-item" id="lblStatusWaiting">
+                <span class="legend-color-label">
+                  <span class="legend-color-dot status-waiting"></span>
+                  <span class="legend-label-name">รอการตอบกลับ</span>
+                </span>
+                <span class="legend-val-group">
+                  <span class="legend-pct">5.3%</span>
+                  <span class="legend-count">(66)</span>
+                </span>
+              </div>
+              <div class="chart-legend-item" id="lblStatusCancel">
+                <span class="legend-color-label">
+                  <span class="legend-color-dot status-cancel"></span>
+                  <span class="legend-label-name">ยกเลิก</span>
+                </span>
+                <span class="legend-val-group">
+                  <span class="legend-pct">2.2%</span>
+                  <span class="legend-count">(28)</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Row 6: Order Report Table + Top Products Table -->
+      <section class="bottom-charts-grid">
+        <!-- Order History Report Table -->
+        <div class="dashboard-panel">
+          <div class="panel-header-row">
+            <div class="panel-title-group">
+              <h3>รายงานการสั่งซื้อ</h3>
+            </div>
+          </div>
+          <div class="table-panel-wrapper">
+            <table class="panel-table">
+              <thead>
+                <tr>
+                  <th>วันที่</th>
+                  <th>จำนวนคำสั่งซื้อ</th>
+                  <th>ยอดสั่งซื้อรวม</th>
+                  <th>ลูกค้าใหม่</th>
+                  <th>อัตราการปิดการขาย</th>
+                </tr>
+              </thead>
+              <tbody id="orderReportTableBody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+          <a class="link-view-all" href="#">ดูรายงานการสั่งซื้อทั้งหมด →</a>
+        </div>
+
+        <!-- Top Products Sold Table -->
+        <div class="dashboard-panel">
+          <div class="panel-header-row">
+            <div class="panel-title-group">
+              <h3>สินค้าที่ขายดี</h3>
+            </div>
+          </div>
+          <div class="table-panel-wrapper">
+            <table class="panel-table">
+              <thead>
+                <tr>
+                  <th>สินค้า</th>
+                  <th>จำนวนที่ขาย</th>
+                  <th>ยอดขายรวม</th>
+                </tr>
+              </thead>
+              <tbody id="topProductsTableBody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+          <a class="link-view-all" href="#">ดูรายงานสินค้าทั้งหมด →</a>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="js/shared.js"></script>
+  <script src="js/report.js"></script>
+</body>
+</html>

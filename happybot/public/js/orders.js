@@ -1,45 +1,5 @@
 // orders.js — ตรรกะจัดการและควบคุมหน้าคำสั่งซื้อ
 
-// Loader สำหรับโหลด HTML Components
-async function loadComponents() {
-  const elements = document.querySelectorAll('[data-include]');
-  const promises = Array.from(elements).map(async (el) => {
-    const file = el.getAttribute('data-include');
-    try {
-      const res = await fetch(file);
-      if (res.ok) {
-        const text = await res.text();
-        const placeholder = document.createElement('div');
-        placeholder.innerHTML = text;
-        const child = placeholder.firstElementChild;
-        el.replaceWith(child);
-      } else {
-        console.error('Failed to load component:', file);
-      }
-    } catch (err) {
-      console.error('Error loading component:', file, err);
-    }
-  });
-  await Promise.all(promises);
-  highlightSidebar();
-}
-
-function highlightSidebar() {
-  const currentPath = window.location.pathname;
-  const links = document.querySelectorAll('.sidebar-menu a');
-  links.forEach(link => {
-    const href = link.getAttribute('href');
-    if (href) {
-      const isDefaultPage = (currentPath === '/' || currentPath.endsWith('/')) && href === 'admin.html';
-      if (currentPath.endsWith(href) || isDefaultPage) {
-        link.classList.add('active');
-      } else {
-        link.classList.remove('active');
-      }
-    }
-  });
-}
-
 const API = location.origin;
 let allOrders = [];     // เก็บรายการคำสั่งซื้อทั้งหมดที่ดึงมา
 let activeFilter = 'all'; // 'all' | 'instock' | 'preorder'

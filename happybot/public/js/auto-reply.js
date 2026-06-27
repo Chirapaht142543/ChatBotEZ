@@ -1,45 +1,5 @@
 // auto-reply.js — การควบคุมระบบหน้ากำหนดกฎบอทตอบกลับอัตโนมัติ
 
-// 1. Loader สำหรับ HTML components
-async function loadComponents() {
-  const elements = document.querySelectorAll('[data-include]');
-  const promises = Array.from(elements).map(async (el) => {
-    const file = el.getAttribute('data-include');
-    try {
-      const res = await fetch(file);
-      if (res.ok) {
-        const text = await res.text();
-        const placeholder = document.createElement('div');
-        placeholder.innerHTML = text;
-        const child = placeholder.firstElementChild;
-        el.replaceWith(child);
-      } else {
-        console.error('Failed to load component:', file);
-      }
-    } catch (err) {
-      console.error('Error loading component:', file, err);
-    }
-  });
-  await Promise.all(promises);
-  highlightSidebar();
-}
-
-function highlightSidebar() {
-  const currentPath = window.location.pathname;
-  const links = document.querySelectorAll('.sidebar-menu a');
-  links.forEach(link => {
-    const href = link.getAttribute('href');
-    if (href) {
-      const isDefaultPage = (currentPath === '/' || currentPath.endsWith('/')) && href === 'admin.html';
-      if (currentPath.endsWith(href) || isDefaultPage) {
-        link.classList.add('active');
-      } else {
-        link.classList.remove('active');
-      }
-    }
-  });
-}
-
 // 2. ตัวแปรเก็บข้อมูลในหน่วยความจำ (State)
 const API = location.origin;
 let inMemoryRules = [];
@@ -51,32 +11,14 @@ let rulesGridEl;
 let searchInputEl;
 let aiToggleEl;
 let systemPromptEl;
+let productPromptEl;
+let promotionPromptEl;
 let saveStatusEl;
 let activeTab = 'rules';
 
 // 3. จัดการแท็บเมนูการตั้งค่า
-function setupTabs() {
-  const tabButtons = document.querySelectorAll('.autoreply-tab');
-  tabButtons.forEach(btn => {
-    btn.onclick = () => {
-      tabButtons.forEach(t => t.classList.remove('active'));
-      btn.classList.add('active');
-      
-      const targetTab = btn.dataset.tab;
-      activeTab = targetTab;
-      
-      document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-      });
-      
-      if (targetTab === 'rules') {
-        document.getElementById('rulesSection').classList.add('active');
-      } else {
-        document.getElementById('settingsSection').classList.add('active');
-      }
-    };
-  });
-}
+// 3. จัดการแท็บเมนูการตั้งค่า (เอาออกเนื่องจากปรับเป็นหน้าเดี่ยวแล้ว)
+function setupTabs() {}
 
 // 4. ดึงข้อมูลกฎการตอบกลับจากเซิร์ฟเวอร์
 async function fetchRules() {
@@ -165,6 +107,8 @@ async function fetchSettings() {
       // อัปเดต UI เปิด/ปิด AI และ System Prompt
       if (aiToggleEl) aiToggleEl.checked = !!settings.aiEnabled;
       if (systemPromptEl) systemPromptEl.value = settings.aiSystemPrompt || '';
+      if (productPromptEl) productPromptEl.value = settings.aiProductPrompt || '';
+      if (promotionPromptEl) promotionPromptEl.value = settings.aiPromotionPrompt || '';
       
       // อัปเดตคีย์เวิร์ด Handoff
       handoffKeywords = settings.handoffKeywords || [];
@@ -200,9 +144,12 @@ async function fetchSettings() {
 async function saveAllSettings() {
   const payload = {
     aiEnabled: aiToggleEl ? aiToggleEl.checked : false,
-    aiSystemPrompt: systemPromptEl ? systemPromptEl.value : '',
     handoffKeywords: handoffKeywords
   };
+  
+  if (systemPromptEl) payload.aiSystemPrompt = systemPromptEl.value;
+  if (productPromptEl) payload.aiProductPrompt = productPromptEl.value;
+  if (promotionPromptEl) payload.aiPromotionPrompt = promotionPromptEl.value;
   
   try {
     const res = await fetch(API + '/api/bot/settings', {
@@ -460,6 +407,8 @@ async function init() {
   searchInputEl = document.getElementById('rulesSearch');
   aiToggleEl = document.getElementById('aiToggle');
   systemPromptEl = document.getElementById('systemPrompt');
+  productPromptEl = document.getElementById('productPrompt');
+  promotionPromptEl = document.getElementById('promotionPrompt');
   saveStatusEl = document.getElementById('saveStatus');
 
   // ตรวจจับปุ่มกด Modal และการบันทึก
@@ -487,8 +436,7 @@ async function init() {
   // บันทึกการตั้งค่าภาพรวม
   document.getElementById('btnSaveSettings').onclick = saveAllSettings;
 
-  // ตั้งค่าปุ่มกดแท็บเมนูและฟังก์ชันค้นหา
-  setupTabs();
+  // ตั้งค่าปุ่มกดค้นหา (ลบฟังก์ชันแท็บออกแล้ว)
   setupSearch();
 
   // ดึงข้อมูลหลักจากเซิร์ฟเวอร์

@@ -35,12 +35,40 @@ function wantsHuman(text) {
  * ค่าเริ่มต้นปิดอยู่ (คืน null) เพื่อให้รันได้โดยไม่ต้องต่อเน็ต/ใส่คีย์
  * วิธีเปิด: ตั้ง environment variable GEMINI_API_KEY (หรือ ANTHROPIC_API_KEY) และเปิดใช้งานในหน้าตั้งค่า AI
  */
-async function aiReply(history) {
+async function aiReply(history, conv) {
   const settings = db.getBotSettings();
   if (!settings.aiEnabled) return null; // ตรวจสอบสถานะเปิด/ปิด AI ในระบบตั้งค่า
 
+  // แปลงความสัมพันธ์ของ source/channel เพื่อเลือก Prompt ที่เกี่ยวข้อง
+  const source = conv ? (conv.source || 'Web Chat') : 'Web Chat';
+  let channelKey = 'web';
+  if (source === 'LINE Official' || source === 'LINE OA' || source === 'line') {
+    channelKey = 'line';
+  } else if (source === 'Facebook Page' || source === 'Facebook Messenger' || source === 'facebook') {
+    channelKey = 'facebook';
+  }
+
+  // ดึงคอนฟิกของช่องทางนั้นๆ
+  const channelConfig = (settings.channels && settings.channels[channelKey]) ? settings.channels[channelKey] : {};
+  
+  // ตรวจสอบว่าเปิดบอทเฉพาะของช่องทางนี้หรือไม่
+  const isChannelEnabled = (channelConfig.enabled !== undefined) ? channelConfig.enabled : true;
+  if (!isChannelEnabled) return null;
+
   const geminiApiKey = process.env.GEMINI_API_KEY || settings.geminiApiKey;
   const anthropicApiKey = process.env.ANTHROPIC_API_KEY || settings.anthropicApiKey;
+
+  const baseSystemPrompt = channelConfig.systemPrompt || settings.aiSystemPrompt || 'คุณเป็นแอดมินร้านค้าออนไลน์ตอบคำถามลูกค้า';
+  const productPrompt = channelConfig.productPrompt || settings.aiProductPrompt || '';
+  const promotionPrompt = channelConfig.promotionPrompt || settings.aiPromotionPrompt || '';
+
+  let systemPrompt = baseSystemPrompt;
+  if (productPrompt.trim()) {
+    systemPrompt += '\n\n[ข้อมูลสินค้า / Product Information]\n' + productPrompt.trim();
+  }
+  if (promotionPrompt.trim()) {
+    systemPrompt += '\n\n[โปรโมชั่น / Promotion Details]\n' + promotionPrompt.trim();
+  }
 
   // 1) ใช้ Gemini API เป็นอันดับแรก
   if (geminiApiKey) {
@@ -61,7 +89,6 @@ async function aiReply(history) {
 
       if (contents.length === 0) return null;
 
-      const systemPrompt = settings.aiSystemPrompt || 'คุณเป็นแอดมินร้านค้าออนไลน์ตอบคำถามลูกค้า';
       const model = settings.aiModel || 'gemini-1.5-flash';
       const temp = settings.aiTemperature !== undefined ? parseFloat(settings.aiTemperature) : 0.7;
 
@@ -123,7 +150,7 @@ async function aiReply(history) {
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 500,
-          system: settings.aiSystemPrompt || 'คุณเป็นแอดมินร้านค้าออนไลน์ตอบคำถามลูกค้า',
+          system: systemPrompt,
           messages,
         }),
       });
@@ -149,7 +176,7 @@ async function aiReply(history) {
  *   text    = ข้อความที่บอทจะตอบ (ถ้ามี)
  *   handoff = true ถ้าควรส่งต่อให้คนจริง
  */
-async function decideReply(text, history) {
+async function decideReply(text, history, conv) {
   // 1) ลูกค้าขอคุยกับคนจริง
   if (wantsHuman(text)) {
     return {
@@ -159,7 +186,7 @@ async function decideReply(text, history) {
   }
 
   // 2) ลองใช้ AI ก่อน (ถ้าเปิดใช้งาน)
-  const ai = await aiReply(history);
+  const ai = await aiReply(history, conv);
   if (ai) return { text: ai, handoff: false };
 
   // 3) ใช้กฎ

@@ -341,10 +341,14 @@
               <!-- Add Team Member Form (Decorative / Mock) -->
               <div class="add-team-member-card">
                 <h4 style="margin-bottom: 12px; font-size: 14px; font-weight: 700;">เชิญสมาชิกแอดมินคนใหม่เข้าร่วมทีม</h4>
-                <div class="form-grid" style="grid-template-columns: 1fr 1fr auto; align-items: end; gap: 12px;">
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr auto; align-items: end; gap: 12px;">
                   <div class="form-group" style="margin-bottom:0">
                     <label class="form-label">ที่อยู่อีเมลสมาชิก</label>
                     <input type="email" class="form-input" id="newMemberEmail" placeholder="เช่น rawipa@happyshop.com" />
+                  </div>
+                  <div class="form-group" style="margin-bottom:0">
+                    <label class="form-label">กำหนดรหัสผ่าน</label>
+                    <input type="password" class="form-input" id="newMemberPassword" placeholder="รหัสผ่านเข้าใช้งาน" />
                   </div>
                   <div class="form-group" style="margin-bottom:0">
                     <label class="form-label">สิทธิ์การทำงาน</label>
@@ -382,6 +386,8 @@
     </div>
   </div>
 
+  <script src="js/auth.js"></script>
+  <script src="js/shared.js"></script>
   <script src="js/settings.js"></script>
 </body>
 </html>

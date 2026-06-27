@@ -65,9 +65,21 @@ function sendJson(res, status, obj) {
 }
 
 // ---------- ตรรกะเมื่อมีข้อความจากลูกค้า: ให้บอทตอบ ----------
-async function handleCustomerMessage(conv, text) {
+async function handleCustomerMessage(conv, text, kind) {
   // ถ้าอยู่โหมดคนตอบ (human) บอทไม่ตอบ แค่แจ้งแอดมิน
   if (conv.mode === 'human') return;
+
+  // หากส่งรูปภาพมา ให้โอนย้ายให้แอดมินคนตอบแทนทันที
+  if (kind === 'image') {
+    db.updateConversation(conv.id, { mode: 'human', status: 'waiting' });
+    broadcastToAdmins('handoff', { conversationId: conv.id });
+    
+    // ตอบข้อความแจ้งเตือนอัตโนมัติของบอท
+    await new Promise((r) => setTimeout(r, 400));
+    const botMsg = db.addMessage(conv.id, { sender: 'bot', text: 'ได้รับรูปภาพเรียบร้อยแล้วค่ะ แอดมินกำลังตรวจสอบความถูกต้องให้นะคะ รอสักครู่ค่ะ 🙏' });
+    emitMessage(conv.id, botMsg);
+    return;
+  }
 
   const history = db.getMessages(conv.id).slice(-12); // ส่ง 12 ข้อความล่าสุดเป็นบริบท
   const decision = await bot.decideReply(text, history);
@@ -170,24 +182,55 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, conv);
   }
 
+  // ===== อัปโหลดไฟล์แบบ Zero-Dependency =====
+  if (pathname === '/api/upload' && req.method === 'POST') {
+    const body = await readJson(req);
+    const { filename, base64 } = body;
+    if (!filename || !base64) {
+      return sendJson(res, 400, { error: 'filename and base64 required' });
+    }
+    
+    try {
+      const cleanName = path.basename(filename);
+      const uploadDir = path.join(PUBLIC_DIR, 'uploads');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      
+      const buffer = Buffer.from(base64, 'base64');
+      fs.writeFileSync(path.join(uploadDir, cleanName), buffer);
+      
+      return sendJson(res, 200, { success: true, url: `/uploads/${cleanName}` });
+    } catch (err) {
+      console.error('Upload error:', err);
+      return sendJson(res, 500, { error: 'Failed to save uploaded file' });
+    }
+  }
+
   // ===== ส่งข้อความ (ทั้งลูกค้าและแอดมิน) =====
   if (pathname === '/api/messages' && req.method === 'POST') {
     const body = await readJson(req);
     const { conversationId, sender, text } = body;
-    if (!conversationId || !sender || !text) {
-      return sendJson(res, 400, { error: 'conversationId, sender, text required' });
+    if (!conversationId || !sender || (!text && !body.mediaUrl)) {
+      return sendJson(res, 400, { error: 'conversationId, sender, and text/mediaUrl required' });
     }
     let conv = db.getConversation(conversationId);
     if (!conv) conv = db.createConversation({ id: conversationId });
 
     if (sender === 'admin') db.updateConversation(conversationId, { unread: 0 });
 
-    const msg = db.addMessage(conversationId, { sender, text });
+    const msg = db.addMessage(conversationId, { 
+      sender, 
+      text, 
+      kind: body.kind, 
+      mediaUrl: body.mediaUrl,
+      senderName: body.senderName 
+    });
     emitMessage(conversationId, msg);
 
     // ลูกค้าส่งมา -> ให้บอทพิจารณาตอบ (ไม่บล็อกการตอบกลับ HTTP)
     if (sender === 'customer') {
-      handleCustomerMessage(db.getConversation(conversationId), text).catch((e) =>
+      handleCustomerMessage(db.getConversation(conversationId), text, body.kind).catch((e) =>
         console.error('bot error:', e)
       );
     }

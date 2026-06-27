@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HappyBot — เข้าสู่ระบบ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/admin.css">
+<style>
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: var(--bg-color);
+  }
+  .login-container {
+    background: #fff;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    max-width: 400px;
+    width: 100%;
+  }
+  .login-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .login-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-top: 16px;
+    margin-bottom: 8px;
+  }
+  .login-subtitle {
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+  .form-group {
+    margin-bottom: 20px;
+  }
+  .form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #475569;
+  }
+  .form-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+  }
+  .form-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+  .btn-submit {
+    width: 100%;
+    padding: 12px;
+    background: var(--primary-color);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s;
+  }
+  .btn-submit:hover {
+    background: #0284c7;
+  }
+  .error-text {
+    color: #ef4444;
+    font-size: 13px;
+    margin-bottom: 16px;
+    text-align: center;
+    display: none;
+  }
+  .test-accounts {
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px dashed var(--border-color);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .test-accounts-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #475569;
+  }
+  .test-account-item {
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+</style>
+</head>
+<body>
+
+  <div class="login-container">
+    <div class="login-header">
+      <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--primary-color)" stroke-width="2" style="margin: 0 auto;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+      <h1 class="login-title">HappyBot</h1>
+      <p class="login-subtitle">ระบบจัดการแชทบอทอัจฉริยะ</p>
+    </div>
+
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label class="form-label" for="email">อีเมลผู้ใช้งาน</label>
+        <input type="email" id="email" class="form-input" placeholder="เช่น rawipa@happyshop.com" required autocomplete="username" />
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" for="password">รหัสผ่าน</label>
+        <input type="password" id="password" class="form-input" placeholder="กรอกรหัสผ่านเพื่อเข้าใช้งาน" required autocomplete="current-password" />
+      </div>
+
+      <div class="error-text" id="loginError">อีเมลหรือรหัสผ่านไม่ถูกต้อง!</div>
+
+      <button type="submit" class="btn-submit">เข้าสู่ระบบ</button>
+    </form>
+
+    <div class="test-accounts">
+      <div class="test-accounts-title">บัญชีทดสอบในระบบ (รหัสผ่านคือ 123 ทุกบัญชี)</div>
+      <div class="test-account-item">
+        <strong>เจ้าของร้าน:</strong> rawipa@happyshop.com
+      </div>
+      <div class="test-account-item">
+        <strong>ผู้จัดการ:</strong> ploy.admin@happyshop.com
+      </div>
+      <div class="test-account-item">
+        <strong>แอดมิน:</strong> pan.support@happyshop.com
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // เคลียร์ประวัติการเข้าสู่ระบบเดิมออกก่อนเมื่อเปิดหน้านี้ (Logout)
+    localStorage.removeItem('currentUser');
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const errorEl = document.getElementById('loginError');
+      
+      errorEl.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          // เก็บข้อมูลผู้ใช้งานลงใน localStorage
+          localStorage.setItem('currentUser', JSON.stringify(data.user));
+          // ส่งผู้ใช้งานไปยังหน้าแดชบอร์ดหลัก
+          window.location.href = '/admin.html';
+        } else {
+          errorEl.textContent = data.error || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+          errorEl.style.display = 'block';
+        }
+      } catch (err) {
+        errorEl.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์';
+        errorEl.style.display = 'block';
+      }
+    }
+  </script>
+</body>
+</html>
