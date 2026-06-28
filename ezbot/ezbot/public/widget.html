@@ -33,67 +33,6 @@
   .compose input:focus{border-color:var(--brand)}
   .compose button{background:var(--brand);color:#fff;border:none;width:44px;height:44px;border-radius:50%;font-size:18px;cursor:pointer;transition:.15s}
   .compose button:hover{background:var(--brand-dark)}
-  .msg-image{
-    max-width: 100%;
-    max-height: 180px;
-    border-radius: 12px;
-    display: block;
-    cursor: pointer;
-    transition: opacity .15s ease-in-out, transform .15s ease-in-out;
-  }
-  .msg-image:hover{
-    opacity: 0.9;
-    transform: scale(1.01);
-  }
-  #attach-btn{
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid #e2e8f0;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    font-size: 18px;
-    cursor: pointer;
-    transition: all .2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-  #attach-btn:hover{
-    color: var(--brand);
-    border-color: var(--brand);
-    transform: scale(1.05);
-  }
-  /* Lightbox styling */
-  #lightbox {
-    display: none;
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.9);
-    z-index: 99999;
-    justify-content: center;
-    align-items: center;
-    cursor: zoom-out;
-    opacity: 0;
-    transition: opacity 0.2s ease-in-out;
-  }
-  #lightbox.show {
-    display: flex;
-    opacity: 1;
-  }
-  #lightbox-img {
-    max-width: 90%;
-    max-height: 90%;
-    border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    transform: scale(0.95);
-    transition: transform 0.2s ease-in-out;
-  }
-  #lightbox.show #lightbox-img {
-    transform: scale(1);
-  }
 </style>
 </head>
 <body>
@@ -108,16 +47,9 @@
     <div class="msgs" id="msgs"></div>
     <div class="typing" id="typing">กำลังพิมพ์...</div>
     <div class="compose">
-      <input type="file" id="file-input" accept="image/*" style="display:none;" />
-      <button id="attach-btn" title="ส่งรูปภาพ">📷</button>
       <input id="input" placeholder="พิมพ์ข้อความ..." autocomplete="off" />
       <button id="send">➤</button>
     </div>
-  </div>
-
-  <!-- Lightbox Modal -->
-  <div id="lightbox">
-    <img id="lightbox-img" src="" alt="พรีวิวรูปภาพ" />
   </div>
 
 <script>
@@ -136,17 +68,7 @@ function render(m){
   const mine = m.sender === 'customer';
   const row = document.createElement('div');
   row.className = 'row ' + (mine ? 'cust' : 'bot');
-  
-  let bubbleContent = '';
-  if (m.kind === 'image') {
-    const fallbackText = m.text && !m.text.includes('.') ? m.text : '';
-    const capHtml = fallbackText ? `<div style="margin-top: 4px;">${escapeHtml(fallbackText)}</div>` : '';
-    bubbleContent = `<img src="${m.mediaUrl}" class="msg-image" alt="สลิปหรือรูปภาพ" />${capHtml}`;
-  } else {
-    bubbleContent = escapeHtml(m.text || '');
-  }
-  
-  row.innerHTML = `<div><div class="bubble">${bubbleContent}</div><div class="time">${fmt(m.createdAt)}</div></div>`;
+  row.innerHTML = `<div><div class="bubble">${escapeHtml(m.text)}</div><div class="time">${fmt(m.createdAt)}</div></div>`;
   msgsEl.appendChild(row);
   msgsEl.scrollTop = msgsEl.scrollHeight;
 }
@@ -157,10 +79,10 @@ async function init(){
   await fetch(API+'/api/conversations',{method:'POST',headers:{'content-type':'application/json'},
     body:JSON.stringify({conversationId:convId, customerName:'ลูกค้าเว็บไซต์'})});
   // โหลดประวัติ
-  const msgs = await (await fetch(API+`/api/conversations/${convId}/messages`)).json();
-  if(msgs.length===0){
+  const hist = await (await fetch(API+`/api/conversations/${convId}/messages`)).json();
+  if(hist.length===0){
     render({sender:'bot',text:'สวัสดีค่ะ 😊 ยินดีให้บริการนะคะ สอบถามเรื่องไหนได้เลยค่ะ',createdAt:Date.now()});
-  } else msgs.forEach(render);
+  } else hist.forEach(render);
   // เปิดสตรีมเรียลไทม์
   const es = new EventSource(API+`/api/stream?conversationId=${convId}`);
   es.addEventListener('message', e=>{
@@ -182,97 +104,6 @@ async function send(){
 
 document.getElementById('send').onclick = send;
 inputEl.addEventListener('keydown', e=>{ if(e.key==='Enter') send(); });
-
-// === การส่งรูปภาพ ===
-const fileInput = document.getElementById('file-input');
-const attachBtn = document.getElementById('attach-btn');
-
-attachBtn.onclick = () => fileInput.click();
-
-fileInput.onchange = async () => {
-  const file = fileInput.files[0];
-  if (!file) return;
-  
-  // ล้างค่าอินพุตเพื่อให้เลือกไฟล์เดิมซ้ำได้
-  fileInput.value = '';
-  
-  if (!file.type.startsWith('image/')) {
-    alert('กรุณาเลือกไฟล์รูปภาพเท่านั้นค่ะ');
-    return;
-  }
-  
-  // แสดงสถานะกำลังอัปโหลด
-  typingEl.style.display = 'block';
-  typingEl.textContent = 'กำลังอัปโหลดรูปภาพ...';
-  
-  const reader = new FileReader();
-  reader.onload = async () => {
-    const base64 = reader.result.split(',')[1];
-    try {
-      const res = await fetch(API + '/api/upload', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ filename: file.name, base64 })
-      });
-      const data = await res.json();
-      if (data.success) {
-        // แสดงในแชทเราทันที
-        render({
-          sender: 'customer',
-          text: file.name,
-          kind: 'image',
-          mediaUrl: data.url,
-          createdAt: Date.now()
-        });
-        
-        // ส่งข้อความรูปภาพไปยังเซิร์ฟเวอร์
-        await fetch(API + '/api/messages', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            conversationId: convId,
-            sender: 'customer',
-            text: file.name,
-            kind: 'image',
-            mediaUrl: data.url
-          })
-        });
-      } else {
-        alert('อัปโหลดรูปภาพล้มเหลวค่ะ');
-      }
-    } catch (err) {
-      console.error('Upload error:', err);
-      alert('เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ');
-    } finally {
-      typingEl.style.display = 'none';
-      typingEl.textContent = 'กำลังพิมพ์...';
-    }
-  };
-  reader.readAsDataURL(file);
-};
-
-// === ระบบพรีวิวรูปภาพขนาดใหญ่ (Lightbox) ===
-const lightbox = document.getElementById('lightbox');
-const lightboxImg = document.getElementById('lightbox-img');
-
-msgsEl.addEventListener('click', e => {
-  if (e.target.classList.contains('msg-image')) {
-    lightboxImg.src = e.target.src;
-    lightbox.style.display = 'flex';
-    lightbox.offsetHeight;
-    lightbox.classList.add('show');
-  }
-});
-
-lightbox.onclick = () => {
-  lightbox.classList.remove('show');
-  setTimeout(() => {
-    if (!lightbox.classList.contains('show')) {
-      lightbox.style.display = 'none';
-    }
-  }, 200);
-};
-
 init();
 </script>
 </body>

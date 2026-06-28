@@ -3,4 +3,4 @@ node_modules/
 *.log
 .gemini/
 .agents/
-happybot/data/
+ezbot/data/

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EZ BOT — บรอดแคสต์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/broadcast.css">
+</head>
+<body>
+  <!-- Sidebar -->
+  <div data-include="components/sidebar.html"></div>
+
+  <!-- Main Wrapper -->
+  <div class="main-wrapper">
+    <!-- Top Header -->
+    <div data-include="components/top-header.html"></div>
+
+    <!-- Broadcast Content -->
+    <main class="broadcast-container">
+      
+      <!-- History List View -->
+      <section id="viewHistory" class="history-view">
+        <div class="broadcast-header">
+          <div>
+            <h1 class="broadcast-title">บรอดแคสต์</h1>
+            <p class="broadcast-subtitle">จัดการแคมเปญ ส่งข้อความโปรโมชั่นและประกาศถึงลูกค้าของคุณ</p>
+          </div>
+          <button class="btn-primary-gradient" id="btnNewBroadcast">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            สร้างบรอดแคสต์ใหม่
+          </button>
+        </div>
+
+        <div class="broadcast-stats">
+          <div class="stat-card">
+            <div class="stat-icon blue">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            </div>
+            <div class="stat-info">
+              <span class="label">ข้อความที่ส่งแล้ว</span>
+              <div class="value">14,250</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="stat-info">
+              <span class="label">ผู้รับทั้งหมด</span>
+              <div class="value">3,840</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon purple">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="stat-info">
+              <span class="label">ตั้งเวลาส่ง</span>
+              <div class="value">2</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="history-card">
+          <div class="table-header">
+            <h3 class="table-title">ประวัติการบรอดแคสต์</h3>
+          </div>
+          <table class="broadcast-table">
+            <thead>
+              <tr>
+                <th>แคมเปญ (Campaign)</th>
+                <th>กลุ่มเป้าหมาย (Audience)</th>
+                <th>วันที่ (Date)</th>
+                <th>สถานะ (Status)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <span class="campaign-name">โปรโมชั่นสิ้นปี ลด 50%</span>
+                  <div class="campaign-preview">🎉 เตรียมพบกับส่วนลดครั้งใหญ่แห่งปี...</div>
+                </td>
+                <td>ลูกค้าทั้งหมด (2,400)</td>
+                <td>28 ธ.ค. 2025, 10:00 น.</td>
+                <td><span class="status-badge scheduled">รอส่ง (Scheduled)</span></td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="campaign-name">แจ้งอัปเดตสินค้าใหม่ เดือน 11</span>
+                  <div class="campaign-preview">สินค้าใหม่มาแล้ว! เช็คเลยตอนนี้...</div>
+                </td>
+                <td>ลูกค้าที่เคยซื้อ (1,250)</td>
+                <td>01 พ.ย. 2025, 09:30 น.</td>
+                <td><span class="status-badge sent">ส่งแล้ว (Sent)</span></td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="campaign-name">ประกาศวันหยุดสงกรานต์</span>
+                  <div class="campaign-preview">ทางร้านจะหยุดให้บริการช่วงวันที่ 13-15...</div>
+                </td>
+                <td>ลูกค้าทั้งหมด (3,500)</td>
+                <td>10 เม.ย. 2025, 14:00 น.</td>
+                <td><span class="status-badge sent">ส่งแล้ว (Sent)</span></td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="campaign-name">ร่าง: โปรพิเศษวันเกิดลูกค้า</span>
+                  <div class="campaign-preview">สุขสันต์วันเกิด! รับส่วนลดพิเศษ...</div>
+                </td>
+                <td>ลูกค้าเกิดเดือนนี้ (120)</td>
+                <td>-</td>
+                <td><span class="status-badge draft">แบบร่าง (Draft)</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Compose View -->
+      <section id="viewCompose" class="compose-view">
+        <div class="broadcast-header">
+          <div>
+            <h1 class="broadcast-title">สร้างบรอดแคสต์ใหม่</h1>
+            <p class="broadcast-subtitle">กำหนดแคมเปญ กลุ่มเป้าหมาย และเนื้อหาที่ต้องการส่ง</p>
+          </div>
+        </div>
+
+        <div class="compose-layout">
+          <form id="formCompose" class="compose-form">
+            <div class="form-group">
+              <label>ชื่อแคมเปญ</label>
+              <input type="text" class="form-control" placeholder="เช่น โปรโมชั่นปีใหม่ 2026" required>
+            </div>
+            
+            <div class="form-group">
+              <label>กลุ่มเป้าหมาย</label>
+              <select class="form-control">
+                <option value="all">ลูกค้าทั้งหมด (3,840 ราย)</option>
+                <option value="active">ลูกค้าที่มีความเคลื่อนไหว (1,200 ราย)</option>
+                <option value="vip">ลูกค้า VIP (150 ราย)</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label>เนื้อหาข้อความ</label>
+              <textarea id="inputMessage" class="form-control" placeholder="พิมพ์ข้อความบรอดแคสต์ของคุณที่นี่..." required></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>รูปภาพ (ไม่บังคับ)</label>
+              <div class="image-upload-area">
+                <div class="image-upload-icon">
+                  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+                <div class="image-upload-text">คลิกหรือลากไฟล์ภาพมาที่นี่</div>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label>เวลาที่ต้องการส่ง</label>
+              <select class="form-control" style="margin-bottom: 12px;">
+                <option value="now">ส่งทันที</option>
+                <option value="schedule">ตั้งเวลาส่งล่วงหน้า</option>
+              </select>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn-outline" id="btnCancel" style="flex: 1;">ยกเลิก</button>
+              <button type="submit" class="btn-primary-gradient" style="flex: 2; justify-content: center;">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                ส่งบรอดแคสต์
+              </button>
+            </div>
+          </form>
+
+          <div class="preview-panel">
+            <div class="mobile-mockup">
+              <div class="mockup-header">
+                EZ BOT Official
+              </div>
+              <div class="mockup-body">
+                <div class="mockup-bubble" id="mockupText" style="color: #94a3b8;">
+                  พิมพ์ข้อความที่นี่...
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/shared.js"></script>
+  <script src="js/broadcast.js"></script>
+</body>
+</html>
