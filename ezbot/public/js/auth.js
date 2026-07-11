@@ -9,7 +9,7 @@
 
   const userJson = localStorage.getItem('currentUser');
   if (!userJson) {
-    window.location.href = '/login.html';
+    window.location.href = 'login.html';
     return;
   }
 })();
