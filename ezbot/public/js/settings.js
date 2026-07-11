@@ -1,6 +1,7 @@
 // settings.js — ควบคุมฟังก์ชันทั้งหมดบนหน้าจอตั้งค่าของ EZ BOT
 
-const API = location.origin;
+const pathParts = window.location.pathname.split('/');
+const API = location.origin + (pathParts.length > 2 && pathParts[1] === 'ezbot' ? '/' + pathParts[1] : '');
 
 
 // ข้อมูลทีมแอดมินสำหรับจำลองการทำงานดึงจาก API

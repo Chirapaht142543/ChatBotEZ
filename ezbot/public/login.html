@@ -157,7 +157,9 @@
       errorEl.style.display = 'none';
 
       try {
-        const res = await fetch('/api/login', {
+        const pathParts = window.location.pathname.split('/');
+      const apiPrefix = pathParts.length > 2 && pathParts[1] === 'ezbot' ? '/' + pathParts[1] : '';
+      const res = await fetch(apiPrefix + '/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -169,7 +171,7 @@
           // เก็บข้อมูลผู้ใช้งานลงใน localStorage
           localStorage.setItem('currentUser', JSON.stringify(data.user));
           // ส่งผู้ใช้งานไปยังหน้าแดชบอร์ดหลัก
-          window.location.href = '/admin.html';
+          window.location.href = 'admin.html';
         } else {
           errorEl.textContent = data.error || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
           errorEl.style.display = 'block';

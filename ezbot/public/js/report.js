@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const API = ''; // Relative to host
+    const pathParts = window.location.pathname.split('/');
+  const API = pathParts.length > 2 && pathParts[1] === 'ezbot' ? '/' + pathParts[1] : ''; // Relative to host
   let conversations = [];
   let allOrders = [];
 

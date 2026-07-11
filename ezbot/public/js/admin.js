@@ -1,6 +1,7 @@
 // admin.js — ตรรกะจัดการหน้ารับส่งแชทหลักสำหรับแอดมิน
 
-const API = location.origin;
+const pathParts = window.location.pathname.split('/');
+const API = location.origin + (pathParts.length > 2 && pathParts[1] === 'ezbot' ? '/' + pathParts[1] : '');
 let convs = {};        // id -> conversation
 let activeId = null;
 let activeSubTab = 'reply'; // 'reply' or 'notes'

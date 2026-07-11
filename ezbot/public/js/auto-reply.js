@@ -1,7 +1,8 @@
 // auto-reply.js — การควบคุมระบบหน้ากำหนดกฎบอทตอบกลับอัตโนมัติ
 
 // 2. ตัวแปรเก็บข้อมูลในหน่วยความจำ (State)
-const API = location.origin;
+const pathParts = window.location.pathname.split('/');
+const API = location.origin + (pathParts.length > 2 && pathParts[1] === 'ezbot' ? '/' + pathParts[1] : '');
 let inMemoryRules = [];
 let handoffKeywords = [];
 let modalKeywords = [];

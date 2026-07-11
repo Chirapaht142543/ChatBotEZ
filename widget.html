@@ -121,7 +121,8 @@
   </div>
 
 <script>
-const API = location.origin;
+const pathParts = window.location.pathname.split('/');
+const API = location.origin + (pathParts.length > 2 && pathParts[1] === 'ezbot' ? '/' + pathParts[1] : '');
 const msgsEl = document.getElementById('msgs');
 const inputEl = document.getElementById('input');
 const typingEl = document.getElementById('typing');

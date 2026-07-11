@@ -1,6 +1,7 @@
 // orders.js — ตรรกะจัดการและควบคุมหน้าคำสั่งซื้อ
 
-const API = location.origin;
+const pathParts = window.location.pathname.split('/');
+const API = location.origin + (pathParts.length > 2 && pathParts[1] === 'ezbot' ? '/' + pathParts[1] : '');
 let allOrders = [];     // เก็บรายการคำสั่งซื้อทั้งหมดที่ดึงมา
 let activeFilter = 'all'; // 'all' | 'instock' | 'preorder'
 

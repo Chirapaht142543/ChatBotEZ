@@ -1,6 +1,7 @@
 // overview.js — ตรรกะควบคุมแดชบอร์ดภาพรวม
 
-const API = location.origin;
+const pathParts = window.location.pathname.split('/');
+const API = location.origin + (pathParts.length > 2 && pathParts[1] === 'ezbot' ? '/' + pathParts[1] : '');
 
 function formatTime(ts) {
   if (!ts) return '';

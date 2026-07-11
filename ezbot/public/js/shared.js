@@ -1,7 +1,8 @@
 // shared.js — ควบคุมฟังก์ชันแถบเมนูข้าง (Sidebar) และแถบหัวข้อ (Top Header) ของทุกหน้าจอในระบบ
 
 (function() {
-  const API = ''; 
+    const pathParts = window.location.pathname.split('/');
+  const API = pathParts.length > 2 && pathParts[1] === 'ezbot' ? '/' + pathParts[1] : ''; 
   const convs = {}; 
   let activePopover = null;
 

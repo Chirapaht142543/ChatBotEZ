@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const API = ''; // Relative to server
+    const pathParts = window.location.pathname.split('/');
+  const API = pathParts.length > 2 && pathParts[1] === 'ezbot' ? '/' + pathParts[1] : ''; // Relative to server
   let botSettings = null;
   let activeChannel = 'web'; // Default active channel: 'web' | 'facebook' | 'line'
 
