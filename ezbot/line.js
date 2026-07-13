@@ -24,8 +24,13 @@ function verifySignature(body, signature, secret) {
   return hash === signature;
 }
 
-// ส่งข้อความตอบกลับไปยังผู้ใช้ LINE
-async function replyToLine(replyToken, text, token) {
+// ส่งข้อความตอบกลับไปยังผู้ใช้ LINE (รองรับทั้งข้อความและรูปภาพ)
+// mediaUrl ต้องเป็น URL แบบ absolute (https) เท่านั้น
+async function replyToLine(replyToken, text, token, mediaUrl) {
+  const messages = [];
+  if (text) messages.push({ type: 'text', text });
+  if (mediaUrl) messages.push({ type: 'image', originalContentUrl: mediaUrl, previewImageUrl: mediaUrl });
+  if (messages.length === 0) return;
   await fetch('https://api.line.me/v2/bot/message/reply', {
     method: 'POST',
     headers: {
@@ -34,7 +39,7 @@ async function replyToLine(replyToken, text, token) {
     },
     body: JSON.stringify({
       replyToken,
-      messages: [{ type: 'text', text }],
+      messages,
     }),
   });
 }
@@ -67,22 +72,35 @@ function attach(deps) {
         const convId = 'line_' + lineUserId; // หนึ่งผู้ใช้ LINE = หนึ่งห้องสนทนา
 
         let conv = deps.db.getConversation(convId);
-        if (!conv) conv = deps.db.createConversation({ id: convId, customerName: 'ลูกค้า LINE' });
+        if (!conv) conv = deps.db.createConversation({ id: convId, customerName: 'ลูกค้า LINE', source: 'line' });
 
         const text = ev.message.text;
         const msg = deps.db.addMessage(convId, { sender: 'customer', text });
         deps.emitMessage(convId, msg);
 
         // ให้บอทตัดสินใจตอบ แล้วส่งกลับเข้า LINE
-        // (ในระบบจริงควรแยก logic ส่งกลับ LINE ออกมา ที่นี่ทำแบบย่อให้เห็นภาพ)
         if (conv.mode !== 'human') {
           const bot = require('./bot');
           const history = deps.db.getMessages(convId).slice(-12);
-          const decision = await bot.decideReply(text, history);
-          if (decision.text) {
-            const botMsg = deps.db.addMessage(convId, { sender: 'bot', text: decision.text });
+          const decision = await bot.decideReply(text, history, conv);
+
+          if (decision.handoff) {
+            deps.db.updateConversation(convId, { mode: 'human', status: 'waiting' });
+            if (typeof deps.broadcastToAdmins === 'function') {
+              deps.broadcastToAdmins('handoff', { conversationId: convId });
+            }
+          }
+
+          if (decision.text || decision.mediaUrl) {
+            const botMsg = deps.db.addMessage(convId, {
+              sender: 'bot',
+              text: decision.text,
+              kind: decision.kind || 'text',
+              mediaUrl: decision.mediaUrl || null,
+            });
             deps.emitMessage(convId, botMsg);
-            await replyToLine(ev.replyToken, decision.text, TOKEN);
+            const mediaAbs = deps.db.absoluteMediaUrl(decision.mediaUrl);
+            await replyToLine(ev.replyToken, decision.text, TOKEN, mediaAbs);
           }
         }
       }

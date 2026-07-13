@@ -4,7 +4,8 @@
   "description": "แชทบอทตอบแชทในเว็บ + แดชบอร์ดแอดมิน (zero-dependency)",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node --watch server.js"
   },
   "engines": {
     "node": ">=18"

@@ -4,3 +4,7 @@ node_modules/
 .gemini/
 .agents/
 ezbot/data/
+
+# ไฟล์ที่ผู้ใช้อัปโหลดตอนรันจริง (รูปสินค้า/บรอดแคสต์) — ไม่ต้อง commit
+ezbot/public/uploads/
+!ezbot/public/uploads/.gitkeep

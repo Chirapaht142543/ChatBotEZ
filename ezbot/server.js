@@ -15,6 +15,7 @@ const path = require('path');
 const db = require('./db');
 const bot = require('./bot');
 const line = require('./line');
+const facebook = require('./facebook');
 
 const PORT = process.env.PORT || 8080;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -42,6 +43,68 @@ function broadcastToAdmins(event, data) {
 function emitMessage(conversationId, msg) {
   broadcastToConversation(conversationId, 'message', msg);
   broadcastToAdmins('message', msg);
+  
+  // ถ้าเป็นข้อความจากแอดมิน หรือระบบบรอดแคสต์ ให้ส่งออกไปยัง API ภายนอกด้วย
+  if (msg.sender === 'admin' || msg.senderName === 'ระบบบรอดแคสต์') {
+    sendExternalMessage(conversationId, msg.text, msg.mediaUrl).catch(err => {
+      console.error('Error sending external message:', err);
+    });
+  }
+}
+
+// ส่งข้อความ (และรูปภาพ) ไปหา API ภายนอก (LINE หรือ Facebook) เมื่อมีการส่งข้อความออก
+async function sendExternalMessage(conversationId, text, mediaUrl) {
+  const settings = db.getBotSettings();
+  const mediaAbs = db.absoluteMediaUrl(mediaUrl);
+  if (conversationId.startsWith('line_')) {
+    const lineToken = settings.lineChannelToken || process.env.LINE_TOKEN;
+    if (lineToken) {
+      const lineUserId = conversationId.replace('line_', '');
+      const messages = [];
+      if (text) messages.push({ type: 'text', text });
+      if (mediaAbs) messages.push({ type: 'image', originalContentUrl: mediaAbs, previewImageUrl: mediaAbs });
+      if (messages.length === 0) return;
+      try {
+        await fetch('https://api.line.me/v2/bot/message/push', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${lineToken}`,
+          },
+          body: JSON.stringify({
+            to: lineUserId,
+            messages,
+          }),
+        });
+      } catch (err) {
+        console.error('Failed to push message to LINE:', err);
+      }
+    }
+  } else if (conversationId.startsWith('facebook_')) {
+    const fbToken = settings.facebookPageToken;
+    if (fbToken) {
+      const fbPsid = conversationId.replace('facebook_', '');
+      // Facebook Send API ส่งได้ทีละหนึ่ง message → ส่ง text ก่อน แล้วตามด้วยรูป
+      const sendFb = async (message) => {
+        try {
+          await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${fbToken}`, {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              recipient: { id: fbPsid },
+              message,
+            }),
+          });
+        } catch (err) {
+          console.error('Failed to push message to Facebook:', err);
+        }
+      };
+      if (text) await sendFb({ text });
+      if (mediaAbs) await sendFb({ attachment: { type: 'image', payload: { url: mediaAbs, is_reusable: true } } });
+    }
+  }
 }
 
 // ---------- ตัวช่วยอ่าน body แบบ JSON ----------
@@ -71,8 +134,19 @@ async function handleCustomerMessage(conv, text, kind) {
   // ถ้าอยู่โหมดคนตอบ (human) บอทไม่ตอบ แค่แจ้งแอดมิน
   if (conv.mode === 'human') return;
 
-  // หากส่งรูปภาพมา ให้โอนย้ายให้แอดมินคนตอบแทนทันที
-  if (kind === 'image') {
+  // หากส่งรูปภาพมา และไม่ได้เปิดใช้งาน AI หรือช่องทางนี้ปิดใช้งานวิเคราะห์รูปภาพ ให้โอนย้ายให้แอดมินคนตอบแทนทันที
+  const settings = db.getBotSettings();
+  const source = conv ? (conv.source || 'Web Chat') : 'Web Chat';
+  let channelKey = 'web';
+  if (source === 'LINE Official' || source === 'LINE OA' || source === 'line') {
+    channelKey = 'line';
+  } else if (source === 'Facebook Page' || source === 'Facebook Messenger' || source === 'facebook') {
+    channelKey = 'facebook';
+  }
+  const channelConfig = (settings.channels && settings.channels[channelKey]) ? settings.channels[channelKey] : {};
+  const isVisionEnabled = (channelConfig.visionEnabled !== undefined) ? channelConfig.visionEnabled : true;
+
+  if (kind === 'image' && (!settings.aiEnabled || !isVisionEnabled)) {
     db.updateConversation(conv.id, { mode: 'human', status: 'waiting' });
     broadcastToAdmins('handoff', { conversationId: conv.id });
     
@@ -94,13 +168,21 @@ async function handleCustomerMessage(conv, text, kind) {
   if (decision.text) {
     // หน่วงเล็กน้อยให้เหมือนคนพิมพ์
     await new Promise((r) => setTimeout(r, 400));
-    const botMsg = db.addMessage(conv.id, { sender: 'bot', text: decision.text });
+    const botMsg = db.addMessage(conv.id, { 
+      sender: 'bot', 
+      text: decision.text,
+      kind: decision.kind || 'text',
+      mediaUrl: decision.mediaUrl || null
+    });
     emitMessage(conv.id, botMsg);
   }
 }
 
 // สร้าง handler ของ LINE (ใช้เมื่อมีการตั้งค่า LINE_TOKEN/LINE_SECRET)
-const lineWebhook = line.attach({ db, emitMessage, handleCustomerMessage });
+const lineWebhook = line.attach({ db, emitMessage, handleCustomerMessage, broadcastToAdmins });
+
+// สร้าง handler ของ Facebook
+const facebookWebhook = facebook.attach({ db, emitMessage, handleCustomerMessage, broadcastToAdmins });
 
 // ---------- เราเตอร์หลัก ----------
 const server = http.createServer(async (req, res) => {
@@ -124,6 +206,38 @@ const server = http.createServer(async (req, res) => {
     req.on('data', (c) => (raw += c));
     req.on('end', () => lineWebhook(req, res, raw).catch((e) => {
       console.error('line webhook error:', e);
+      res.writeHead(500); res.end('error');
+    }));
+    return;
+  }
+
+  // ===== Webhook ของ Facebook (GET) — ยืนยันการเชื่อมต่อ Webhook =====
+  if (pathname === '/webhook/facebook' && req.method === 'GET') {
+    const mode = url.searchParams.get('hub.mode');
+    const token = url.searchParams.get('hub.verify_token');
+    const challenge = url.searchParams.get('hub.challenge');
+
+    const settings = db.getBotSettings();
+    const expectedToken = settings.facebookVerifyToken;
+
+    if (mode === 'subscribe' && token === expectedToken) {
+      console.log('Facebook webhook verified!');
+      res.writeHead(200, { 'content-type': 'text/plain' });
+      res.end(challenge);
+    } else {
+      console.warn('Facebook webhook verification failed. Token mismatch.');
+      res.writeHead(403);
+      res.end('Forbidden');
+    }
+    return;
+  }
+
+  // ===== Webhook ของ Facebook (POST) — รับข้อความเข้ามา =====
+  if (pathname === '/webhook/facebook' && req.method === 'POST') {
+    let raw = '';
+    req.on('data', (c) => (raw += c));
+    req.on('end', () => facebookWebhook(req, res, raw).catch((e) => {
+      console.error('facebook webhook error:', e);
       res.writeHead(500); res.end('error');
     }));
     return;
@@ -349,6 +463,64 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, msg);
   }
 
+  // ===== จัดการบรอดแคสต์ (Broadcasts) =====
+  if (pathname === '/api/broadcasts' && req.method === 'GET') {
+    return sendJson(res, 200, db.getBroadcasts());
+  }
+
+  if (pathname === '/api/broadcasts' && req.method === 'POST') {
+    const body = await readJson(req);
+    const { campaignName, audience, text, mediaUrl, sendTime } = body;
+    if (!campaignName || !audience || !text) {
+      return sendJson(res, 400, { error: 'campaignName, audience, and text are required' });
+    }
+
+    // กรองกลุ่มเป้าหมายเพื่อคำนวณจำนวนผู้รับล่วงหน้า
+    const conversations = db.listConversations();
+    const targets = conversations.filter(c => {
+      if (audience === 'all') return true;
+      if (audience === 'active') return c.status !== 'closed';
+      if (audience === 'vip') {
+        const hasVipTag = c.tags && c.tags.some(t => t.toLowerCase() === 'vip');
+        return c.starred || hasVipTag;
+      }
+      return true;
+    });
+
+    const broadcast = {
+      campaignName,
+      audience,
+      text,
+      mediaUrl: mediaUrl || null,
+      sendTime: sendTime || 'now',
+      status: sendTime === 'now' ? 'sent' : 'scheduled',
+      scheduleTime: body.scheduleTime || null,
+      recipientsCount: targets.length
+    };
+
+    const newBc = db.addBroadcast(broadcast);
+
+    // ถ้าต้องการส่งทันที (now)
+    if (newBc.status === 'sent') {
+      // ส่งข้อความไปหาทีละคน
+      for (const c of targets) {
+        const msg = db.addMessage(c.id, {
+          sender: 'bot',
+          senderName: 'ระบบบรอดแคสต์',
+          text,
+          kind: mediaUrl ? 'image' : 'text',
+          mediaUrl: mediaUrl || null
+        });
+        
+        if (msg) {
+          emitMessage(c.id, msg);
+        }
+      }
+    }
+
+    return sendJson(res, 200, newBc);
+  }
+
   // ===== จัดการคีย์เวิร์ดบทสนทนาอัตโนมัติ (Rules) =====
   if (pathname === '/api/bot/rules' && req.method === 'GET') {
     return sendJson(res, 200, db.getRules());
@@ -376,6 +548,43 @@ const server = http.createServer(async (req, res) => {
     const body = await readJson(req);
     const updated = db.saveBotSettings(body);
     return sendJson(res, 200, { success: true, settings: updated });
+  }
+
+  // ===== จัดการสินค้าและราคา (Products) =====
+  if (pathname === '/api/products' && req.method === 'GET') {
+    return sendJson(res, 200, db.getProducts());
+  }
+
+  if (pathname === '/api/products' && req.method === 'POST') {
+    const body = await readJson(req);
+    if (Array.isArray(body)) {
+      const updated = db.saveProducts(body);
+      return sendJson(res, 200, { success: true, products: updated });
+    } else {
+      const products = db.getProducts();
+      if (!body.id) {
+        body.id = 'prod_' + Date.now().toString(36) + '_' + Math.floor(Math.random() * 1000);
+        products.push(body);
+      } else {
+        const idx = products.findIndex(p => p.id === body.id);
+        if (idx !== -1) {
+          products[idx] = body;
+        } else {
+          products.push(body);
+        }
+      }
+      db.saveProducts(products);
+      return sendJson(res, 200, { success: true, product: body });
+    }
+  }
+
+  if (pathname.startsWith('/api/products/') && req.method === 'DELETE') {
+    const parts = pathname.split('/');
+    const id = parts[parts.length - 1];
+    const products = db.getProducts();
+    const filtered = products.filter(p => p.id !== id);
+    db.saveProducts(filtered);
+    return sendJson(res, 200, { success: true });
   }
 
   // ===== จัดการผู้ใช้งาน (Users) =====

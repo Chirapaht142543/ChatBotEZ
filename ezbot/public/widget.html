@@ -408,11 +408,12 @@ function render(m){
   
   let bubbleContent = '';
   if (m.kind === 'image') {
-    const fallbackText = m.text && !m.text.includes('.') ? m.text : '';
-    const capHtml = fallbackText ? `<div style="margin-top: 4px;">${escapeHtml(fallbackText)}</div>` : '';
+    const isFileName = m.text && /\.(png|jpe?g|gif|webp)$/i.test(m.text);
+    const fallbackText = m.text && !isFileName ? m.text : '';
+    const capHtml = fallbackText ? `<div style="margin-top: 8px; white-space: pre-wrap; text-align: left; line-height: 1.4; font-size: 13.5px; font-family: inherit;">${escapeHtml(fallbackText)}</div>` : '';
     bubbleContent = `<img src="${m.mediaUrl}" class="msg-image" alt="สลิปหรือรูปภาพ" />${capHtml}`;
   } else {
-    bubbleContent = escapeHtml(m.text || '');
+    bubbleContent = escapeHtml(m.text || '').replace(/\n/g, '<br>');
   }
   
   row.innerHTML = `<div><div class="bubble">${bubbleContent}</div><div class="time">${fmt(m.createdAt)}</div></div>`;

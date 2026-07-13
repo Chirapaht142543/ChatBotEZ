@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const channelTabs = document.querySelectorAll('.channel-tab');
   const globalAiToggle = document.getElementById('globalAiToggle');
   const channelEnabledCheckbox = document.getElementById('channelEnabledCheckbox');
+  const channelVisionEnabledCheckbox = document.getElementById('channelVisionEnabledCheckbox');
   const channelSystemPrompt = document.getElementById('channelSystemPrompt');
   const channelProductPrompt = document.getElementById('channelProductPrompt');
   const channelPromotionPrompt = document.getElementById('channelPromotionPrompt');
@@ -117,6 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     botSettings.channels[activeChannel].enabled = channelEnabledCheckbox.checked;
+    botSettings.channels[activeChannel].visionEnabled = channelVisionEnabledCheckbox.checked;
     botSettings.channels[activeChannel].systemPrompt = channelSystemPrompt.value;
     botSettings.channels[activeChannel].productPrompt = channelProductPrompt.value;
     botSettings.channels[activeChannel].promotionPrompt = channelPromotionPrompt.value;
@@ -129,6 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = botSettings.channels[activeChannel];
     
     channelEnabledCheckbox.checked = (data.enabled !== undefined) ? data.enabled : true;
+    channelVisionEnabledCheckbox.checked = (data.visionEnabled !== undefined) ? data.visionEnabled : true;
     channelSystemPrompt.value = data.systemPrompt || '';
     channelProductPrompt.value = data.productPrompt || '';
     channelPromotionPrompt.value = data.promotionPrompt || '';

@@ -75,6 +75,13 @@ async function fetchSettings() {
       document.getElementById('lineChannelToken').value = settings.lineChannelToken || '';
       document.getElementById('lineChannelSecret').value = settings.lineChannelSecret || '';
 
+      // บันทึกการเชื่อมต่อ Facebook
+      document.getElementById('publicUrl').value = settings.publicUrl || '';
+      document.getElementById('facebookVerifyToken').value = settings.facebookVerifyToken || '';
+      document.getElementById('facebookPageToken').value = settings.facebookPageToken || '';
+      document.getElementById('facebookAppSecret').value = settings.facebookAppSecret || '';
+      document.getElementById('facebookPageId').value = settings.facebookPageId || '';
+
       // การตั้งค่าเว็บไซต์
       document.getElementById('websiteUrl').value = settings.websiteUrl || '';
       document.getElementById('allowedDomains').value = settings.allowedDomains || '';
@@ -156,6 +163,44 @@ function initWebhookCopy() {
     } catch (err) {
       console.error('Failed to copy webhook URL:', err);
     }
+  };
+}
+
+// จัดการคัดลอกลิงก์ Webhook Facebook
+function initFbWebhookCopy() {
+  const copyBtn = document.getElementById('btnCopyFbWebhook');
+  const webhookInput = document.getElementById('facebookWebhookUrl');
+
+  // ตั้งค่า URL แนะนำตามโดเมนปัจจุบัน
+  webhookInput.value = `${window.location.origin}/webhook/facebook`;
+
+  copyBtn.onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(webhookInput.value);
+      copyBtn.textContent = 'คัดลอกแล้ว!';
+      copyBtn.classList.add('btn-primary');
+      setTimeout(() => {
+        copyBtn.textContent = 'คัดลอกลิงก์';
+        copyBtn.classList.remove('btn-primary');
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy Facebook webhook URL:', err);
+    }
+  };
+}
+
+// สร้าง Verify Token แบบสุ่ม
+function initFbVerifyTokenGen() {
+  const genBtn = document.getElementById('btnGenFbVerifyToken');
+  const verifyTokenInput = document.getElementById('facebookVerifyToken');
+
+  genBtn.onclick = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let token = 'fb_verify_';
+    for (let i = 0; i < 16; i++) {
+      token += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    verifyTokenInput.value = token;
   };
 }
 
@@ -354,6 +399,13 @@ async function handleFormSubmit(e) {
     lineChannelToken: document.getElementById('lineChannelToken').value.trim(),
     lineChannelSecret: document.getElementById('lineChannelSecret').value.trim(),
 
+    // Facebook Connection
+    publicUrl: document.getElementById('publicUrl').value.trim().replace(/\/+$/, ''),
+    facebookVerifyToken: document.getElementById('facebookVerifyToken').value.trim(),
+    facebookPageToken: document.getElementById('facebookPageToken').value.trim(),
+    facebookAppSecret: document.getElementById('facebookAppSecret').value.trim(),
+    facebookPageId: document.getElementById('facebookPageId').value.trim(),
+
     // Website Connection
     websiteUrl: document.getElementById('websiteUrl').value.trim(),
     allowedDomains: document.getElementById('allowedDomains').value.trim(),
@@ -529,6 +581,8 @@ async function startApp() {
 
   initApiKeyToggle();
   initWebhookCopy();
+  initFbWebhookCopy();
+  initFbVerifyTokenGen();
   initTemperatureSlider();
   initEmbedCopy();
   initColorPicker();
