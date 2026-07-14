@@ -1,17 +1,39 @@
 'use strict';
 
 /*
- * db.js — ชั้นเก็บข้อมูลแบบง่าย ใช้ไฟล์ JSON 1 ไฟล์
+ * db.js — ชั้นเก็บข้อมูลด้วย SQLite (embedded)
  * -------------------------------------------------
- * จุดประสงค์: ให้รันได้ทันทีโดยไม่ต้องติดตั้งฐานข้อมูล
- * เมื่อระบบโตขึ้นให้เปลี่ยนไปใช้ PostgreSQL / MongoDB / SQLite
- * โดยแก้แค่ฟังก์ชันในไฟล์นี้ (โครงสร้างข้อมูลด้านนอกเหมือนเดิม)
+ * ใช้ node:sqlite ที่มีมากับ Node.js (>=22.5) จึงยังคง "zero-dependency"
+ * - ทนทานต่อไฟดับ/เซิร์ฟเวอร์ปิดกลางคัน (WAL + เขียนแบบ atomic ในตัว)
+ * - ไม่โหลดข้อความทั้งหมดขึ้น RAM (query เฉพาะที่ต้องใช้)
+ * - โครงสร้างข้อมูล/สัญญาฟังก์ชันด้านนอกเหมือนเดิมทุกอย่าง (bot.js/server.js ไม่ต้องแก้)
+ *
+ * ตาราง:
+ *   conversations(id, customerId, lastMessageAt, data JSON)
+ *   messages(id, conversationId, createdAt, data JSON)
+ *   kv(key, value JSON)  — เก็บค่าเดี่ยว: rules, settings, users, broadcasts, products, seq
+ *
+ * ครั้งแรกที่รัน ถ้ามีไฟล์ store.json เดิมจะย้ายข้อมูลเข้ามาให้อัตโนมัติ
  */
 
 const fs = require('fs');
 const path = require('path');
 
-const DATA_FILE = path.join(__dirname, 'data', 'store.json');
+// ซ่อนเฉพาะ ExperimentalWarning ของ node:sqlite (เป็นฟีเจอร์ทดลองแต่เสถียรพอใช้งานจริง)
+// โดยยังปล่อย warning อื่นๆ ผ่านตามปกติ — ต้องทำก่อน require('node:sqlite')
+const _emitWarning = process.emitWarning.bind(process);
+process.emitWarning = function (warning, ...args) {
+  const type = (args[0] && typeof args[0] === 'object') ? args[0].type : args[0];
+  if (type === 'ExperimentalWarning' && String(warning).includes('SQLite')) return;
+  return _emitWarning(warning, ...args);
+};
+
+const { DatabaseSync } = require('node:sqlite');
+
+// ตำแหน่งที่เก็บข้อมูล — override ได้ผ่าน env EZBOT_DATA_DIR (เช่นชี้ไป volume บน VPS)
+const DATA_DIR = process.env.EZBOT_DATA_DIR || path.join(__dirname, 'data');
+const DB_FILE = path.join(DATA_DIR, 'ezbot.db');
+const LEGACY_JSON = path.join(DATA_DIR, 'store.json');
 
 // โครงสร้างกฎการตอบกลับและค่าตั้งต้นสำหรับบอท
 const DEFAULT_RULES = [
@@ -173,101 +195,115 @@ const DEFAULT_USERS = [
   { id: 3, name: 'น้องป่าน (แอดมิน)', email: 'pan.support@happyshop.com', password: '123', role: 'Agent', online: false, avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150' }
 ];
 
-const DEFAULT_DATA = { conversations: {}, messages: {}, seq: 0, rules: DEFAULT_RULES, settings: DEFAULT_SETTINGS, users: DEFAULT_USERS, broadcasts: [], products: DEFAULT_PRODUCTS };
+// ---------- เปิดการเชื่อมต่อฐานข้อมูลและสร้างตาราง ----------
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
-let cache = null;       // เก็บข้อมูลในหน่วยความจำ
-let writeTimer = null;  // หน่วงการเขียนไฟล์ (debounce) กันเขียนถี่เกินไป
+const db = new DatabaseSync(DB_FILE);
+db.exec(`
+  PRAGMA journal_mode = WAL;
+  CREATE TABLE IF NOT EXISTS conversations (
+    id            TEXT PRIMARY KEY,
+    customerId    TEXT,
+    lastMessageAt INTEGER,
+    data          TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS messages (
+    id             TEXT PRIMARY KEY,
+    conversationId TEXT NOT NULL,
+    createdAt      INTEGER,
+    data           TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages (conversationId, createdAt);
+  CREATE TABLE IF NOT EXISTS kv (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
+`);
 
-function load() {
-  if (cache) return cache;
+// ---------- ตัวช่วยอ่าน/เขียนค่าเดี่ยว (singleton) ในตาราง kv ----------
+function kvGet(key) {
+  const row = db.prepare('SELECT value FROM kv WHERE key = ?').get(key);
+  return row ? JSON.parse(row.value) : undefined;
+}
+
+function kvSet(key, value) {
+  db.prepare('INSERT INTO kv (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value')
+    .run(key, JSON.stringify(value));
+  return value;
+}
+
+// บันทึกแถวบทสนทนา (sync คอลัมน์ที่ใช้ query ให้ตรงกับ data เสมอ)
+function saveConversationRow(conv) {
+  db.prepare('INSERT OR REPLACE INTO conversations (id, customerId, lastMessageAt, data) VALUES (?, ?, ?, ?)')
+    .run(conv.id, conv.customerId || '', conv.lastMessageAt || 0, JSON.stringify(conv));
+  return conv;
+}
+
+// ---------- ย้ายข้อมูลจาก store.json เดิม (ทำครั้งเดียว) ----------
+function migrateFromJsonOnce() {
+  if (kvGet('_migrated')) return;
   try {
-    const raw = fs.readFileSync(DATA_FILE, 'utf8');
-    cache = JSON.parse(raw);
-    // ตรวจสอบโครงสร้างว่ามีข้อมูลครบหรือไม่
-    if (!cache.rules) {
-      cache.rules = JSON.parse(JSON.stringify(DEFAULT_RULES));
-    }
-    if (!cache.settings) {
-      cache.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-    } else {
-      Object.keys(DEFAULT_SETTINGS).forEach(key => {
-        if (cache.settings[key] === undefined) {
-          cache.settings[key] = DEFAULT_SETTINGS[key];
-        }
-      });
-    }
-    if (!cache.users) {
-      cache.users = JSON.parse(JSON.stringify(DEFAULT_USERS));
-    } else {
-      cache.users.forEach(u => {
-        if (!u.password) u.password = '123';
-      });
-    }
-    if (!cache.broadcasts) {
-      cache.broadcasts = [];
-    }
-    if (!cache.products) {
-      cache.products = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+    if (fs.existsSync(LEGACY_JSON)) {
+      const old = JSON.parse(fs.readFileSync(LEGACY_JSON, 'utf8'));
+      for (const conv of Object.values(old.conversations || {})) {
+        saveConversationRow(conv);
+      }
+      const insMsg = db.prepare('INSERT OR REPLACE INTO messages (id, conversationId, createdAt, data) VALUES (?, ?, ?, ?)');
+      for (const [cid, list] of Object.entries(old.messages || {})) {
+        for (const m of list || []) insMsg.run(m.id, cid, m.createdAt || 0, JSON.stringify(m));
+      }
+      if (old.rules) kvSet('rules', old.rules);
+      if (old.settings) kvSet('settings', old.settings);
+      if (old.users) kvSet('users', old.users);
+      if (old.broadcasts) kvSet('broadcasts', old.broadcasts);
+      if (old.products) kvSet('products', old.products);
+      kvSet('seq', old.seq || 0);
+      // สำรองไฟล์เดิมไว้ (ไม่ลบทิ้ง) เผื่อต้องย้อนกลับ
+      try { fs.renameSync(LEGACY_JSON, LEGACY_JSON + '.migrated'); } catch (_) {}
+      console.log('db: ย้ายข้อมูลจาก store.json -> ezbot.db เรียบร้อย');
     }
   } catch (e) {
-    cache = JSON.parse(JSON.stringify(DEFAULT_DATA));
-    flushNow();
+    console.error('db: ย้ายข้อมูลจาก store.json ล้มเหลว:', e);
   }
-  return cache;
+  kvSet('_migrated', true);
 }
+migrateFromJsonOnce();
 
-function flushNow() {
-  const dir = path.dirname(DATA_FILE);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  fs.writeFileSync(DATA_FILE, JSON.stringify(cache, null, 2), 'utf8');
-}
-
-// เขียนแบบหน่วงเวลา เพื่อรวมหลายการเปลี่ยนแปลงในครั้งเดียว
-function scheduleWrite() {
-  if (writeTimer) return;
-  writeTimer = setTimeout(() => {
-    writeTimer = null;
-    flushNow();
-  }, 200);
-}
-
+// ---------- ตัวนับ id แบบเพิ่มขึ้นเรื่อยๆ (คงรูปแบบเดิม) ----------
 function nextId(prefix) {
-  const d = load();
-  d.seq += 1;
-  return `${prefix}_${Date.now().toString(36)}_${d.seq}`;
+  const seq = (kvGet('seq') || 0) + 1;
+  kvSet('seq', seq);
+  return `${prefix}_${Date.now().toString(36)}_${seq}`;
 }
 
 // ---------- บทสนทนา (conversation) ----------
 
 function listConversations() {
-  const d = load();
-  return Object.values(d.conversations).sort(
-    (a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0)
-  );
+  const rows = db.prepare('SELECT data FROM conversations ORDER BY lastMessageAt DESC').all();
+  return rows.map(r => JSON.parse(r.data));
 }
 
 function getConversation(id) {
-  return load().conversations[id] || null;
+  const row = db.prepare('SELECT data FROM conversations WHERE id = ?').get(id);
+  return row ? JSON.parse(row.data) : null;
 }
 
 function createConversation({ id, customerName, email, phone, avatarUrl, topic, customerId, source }) {
-  const d = load();
   const convId = id || nextId('conv');
-  if (d.conversations[convId]) {
+  const existing = getConversation(convId);
+  if (existing) {
     // อัปเดตข้อมูลหากมีการส่งมาเพิ่มเติม
-    if (customerName) d.conversations[convId].customerName = customerName;
-    if (email) d.conversations[convId].email = email;
-    if (phone) d.conversations[convId].phone = phone;
-    if (avatarUrl) d.conversations[convId].avatarUrl = avatarUrl;
-    if (topic) d.conversations[convId].topic = topic;
-    if (customerId) d.conversations[convId].customerId = customerId;
-    if (source) d.conversations[convId].source = source;
-    scheduleWrite();
-    return d.conversations[convId];
+    if (customerName) existing.customerName = customerName;
+    if (email) existing.email = email;
+    if (phone) existing.phone = phone;
+    if (avatarUrl) existing.avatarUrl = avatarUrl;
+    if (topic) existing.topic = topic;
+    if (customerId) existing.customerId = customerId;
+    if (source) existing.source = source;
+    return saveConversationRow(existing);
   }
-  d.conversations[convId] = {
+  const now = Date.now();
+  const conv = {
     id: convId,
     customerId: customerId || '',
     customerName: customerName || 'ลูกค้าใหม่',
@@ -284,40 +320,34 @@ function createConversation({ id, customerName, email, phone, avatarUrl, topic, 
     starred: false,
     notes: '',
     internalNotes: [],
-    createdAt: Date.now(),
+    createdAt: now,
     lastMessage: '',
-    lastMessageAt: Date.now(),
+    lastMessageAt: now,
   };
-  d.messages[convId] = [];
-  scheduleWrite();
-  return d.conversations[convId];
+  return saveConversationRow(conv);
 }
 
 function updateConversation(id, patch) {
-  const d = load();
-  const conv = d.conversations[id];
+  const conv = getConversation(id);
   if (!conv) return null;
   Object.assign(conv, patch);
-  scheduleWrite();
-  return conv;
+  return saveConversationRow(conv);
 }
 
 function clearAllData() {
-  const d = load();
-  d.conversations = {};
-  d.messages = {};
-  flushNow();
+  db.exec('DELETE FROM conversations; DELETE FROM messages;');
 }
 
 // ---------- ข้อความ (message) ----------
 
 function getMessages(conversationId) {
-  return load().messages[conversationId] || [];
+  const rows = db.prepare('SELECT data FROM messages WHERE conversationId = ? ORDER BY createdAt ASC, rowid ASC').all(conversationId);
+  return rows.map(r => JSON.parse(r.data));
 }
 
 function addMessage(conversationId, { sender, text, kind, senderName, mediaUrl }) {
-  const d = load();
-  if (!d.conversations[conversationId]) return null;
+  const conv = getConversation(conversationId);
+  if (!conv) return null;
   const msg = {
     id: nextId('msg'),
     conversationId,
@@ -328,38 +358,47 @@ function addMessage(conversationId, { sender, text, kind, senderName, mediaUrl }
     text,
     createdAt: Date.now(),
   };
-  d.messages[conversationId].push(msg);
+  db.prepare('INSERT INTO messages (id, conversationId, createdAt, data) VALUES (?, ?, ?, ?)')
+    .run(msg.id, conversationId, msg.createdAt, JSON.stringify(msg));
 
-  const conv = d.conversations[conversationId];
   conv.lastMessage = kind === 'image' ? '[รูปภาพ]' : kind === 'file' ? '[ไฟล์แนบ]' : text;
   conv.lastMessageAt = msg.createdAt;
-  if (sender === 'customer') conv.unread += 1;
-  scheduleWrite();
+  if (sender === 'customer') conv.unread = (conv.unread || 0) + 1;
+  saveConversationRow(conv);
   return msg;
 }
 
 // ---------- กฎบอท (bot rules) ----------
 function getRules() {
-  return load().rules || [];
+  let rules = kvGet('rules');
+  if (!rules) { rules = JSON.parse(JSON.stringify(DEFAULT_RULES)); kvSet('rules', rules); }
+  return rules;
 }
 
 function saveRules(rules) {
-  const d = load();
-  d.rules = rules;
-  scheduleWrite();
-  return d.rules;
+  return kvSet('rules', rules);
 }
 
 // ---------- ตั้งค่าบอท (bot settings) ----------
 function getBotSettings() {
-  return load().settings || {};
+  let settings = kvGet('settings');
+  if (!settings) {
+    settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+    kvSet('settings', settings);
+    return settings;
+  }
+  // เติมคีย์ที่ยังไม่มีจากค่าเริ่มต้น (รองรับกรณีเพิ่มฟีเจอร์/ฟิลด์ใหม่ภายหลัง)
+  let changed = false;
+  for (const key of Object.keys(DEFAULT_SETTINGS)) {
+    if (settings[key] === undefined) { settings[key] = DEFAULT_SETTINGS[key]; changed = true; }
+  }
+  if (changed) kvSet('settings', settings);
+  return settings;
 }
 
 function saveBotSettings(settings) {
-  const d = load();
-  d.settings = Object.assign(d.settings || {}, settings);
-  scheduleWrite();
-  return d.settings;
+  const merged = Object.assign(getBotSettings(), settings);
+  return kvSet('settings', merged);
 }
 
 // แปลง path รูปภาพภายใน (เช่น /uploads/xxx.jpg) ให้เป็น URL แบบ absolute
@@ -375,30 +414,30 @@ function absoluteMediaUrl(mediaUrl) {
 
 // ---------- ผู้ใช้งาน (Users) ----------
 function getUsers() {
-  return load().users || [];
+  let users = kvGet('users');
+  if (!users) {
+    users = JSON.parse(JSON.stringify(DEFAULT_USERS));
+    kvSet('users', users);
+    return users;
+  }
+  // เติมรหัสผ่านเริ่มต้นให้ผู้ใช้ที่ยังไม่มี (คงพฤติกรรมเดิม)
+  let changed = false;
+  users.forEach(u => { if (!u.password) { u.password = '123'; changed = true; } });
+  if (changed) kvSet('users', users);
+  return users;
 }
 
 function saveUsers(users) {
-  const d = load();
-  d.users = users;
-  scheduleWrite();
-  return d.users;
+  return kvSet('users', users);
 }
 
 // ---------- บรอดแคสต์ (Broadcasts) ----------
 function getBroadcasts() {
-  const d = load();
-  if (!d.broadcasts) {
-    d.broadcasts = [];
-  }
-  return d.broadcasts;
+  return kvGet('broadcasts') || [];
 }
 
 function addBroadcast(broadcast) {
-  const d = load();
-  if (!d.broadcasts) {
-    d.broadcasts = [];
-  }
+  const broadcasts = getBroadcasts();
   const newBc = {
     id: nextId('bc'),
     campaignName: broadcast.campaignName,
@@ -411,33 +450,41 @@ function addBroadcast(broadcast) {
     recipientsCount: broadcast.recipientsCount || 0,
     createdAt: Date.now(),
   };
-  d.broadcasts.push(newBc);
-  scheduleWrite();
+  broadcasts.push(newBc);
+  kvSet('broadcasts', broadcasts);
   return newBc;
 }
 
 // ---------- สินค้า (Products) ----------
 function getProducts() {
-  const d = load();
-  if (!d.products) {
-    d.products = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
-  }
-  return d.products;
+  let products = kvGet('products');
+  if (!products) { products = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS)); kvSet('products', products); }
+  return products;
 }
 
 // บันทึกรายการสินค้า
 function saveProducts(products) {
-  const d = load();
-  d.products = products;
-  scheduleWrite();
-  return d.products;
+  return kvSet('products', products);
 }
+
+// ---------- ปิดฐานข้อมูลอย่างเรียบร้อย (checkpoint WAL เข้าไฟล์หลัก) ----------
+let closed = false;
+function close() {
+  if (closed) return;
+  closed = true;
+  try { db.exec('PRAGMA wal_checkpoint(TRUNCATE);'); } catch (_) {}
+  try { db.close(); } catch (_) {}
+}
+process.on('exit', close);
+process.on('SIGINT', () => { close(); process.exit(0); });
+process.on('SIGTERM', () => { close(); process.exit(0); });
 
 module.exports = {
   listConversations,
   getConversation,
   createConversation,
   updateConversation,
+  clearAllData,
   getMessages,
   addMessage,
   getRules,
@@ -451,4 +498,5 @@ module.exports = {
   addBroadcast,
   getProducts,
   saveProducts,
+  close,
 };
