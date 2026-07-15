@@ -321,6 +321,43 @@ const server = http.createServer(async (req, res) => {
     const cid = decodeURIComponent(msgMatch[1]);
     return sendJson(res, 200, db.getMessages(cid));
   }
+  // ===== ดึงประวัติออเดอร์และประวัติเติมเงินภายนอกจาก Next.js (สำหรับแอดมินดูแถบขวา) =====
+  const extOrdersMatch = pathname.match(/^\/api\/conversations\/([^/]+)\/external-orders$/);
+  if (extOrdersMatch && req.method === 'GET') {
+    const cid = decodeURIComponent(extOrdersMatch[1]);
+    const conv = db.getConversation(cid);
+    if (!conv) return sendJson(res, 404, { error: 'not found' });
+
+    const internalSecret = process.env.EZBOT_INTERNAL_SECRET || 'fallback_default_secret_key';
+    const mainSiteUrl = process.env.MAIN_SITE_URL || 'http://127.0.0.1:3000';
+
+    try {
+      const queryRes = await fetch(`${mainSiteUrl}/api/internal/query`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${internalSecret}`
+        },
+        body: JSON.stringify({
+          queryType: 'orders_by_customer',
+          email: conv.email || '',
+          phone: conv.phone || ''
+        })
+      });
+
+      if (!queryRes.ok) {
+        const errText = await queryRes.text();
+        console.error('Next.js query error response:', errText);
+        return sendJson(res, queryRes.status, { error: 'Failed to query database' });
+      }
+
+      const queryData = await queryRes.json();
+      return sendJson(res, 200, { success: true, orders: queryData.orders || [] });
+    } catch (err) {
+      console.error('Error fetching external orders:', err.message);
+      return sendJson(res, 500, { success: false, error: 'Internal server error' });
+    }
+  }
 
   // ===== สลับโหมด บอท <-> คน =====
   const modeMatch = pathname.match(/^\/api\/conversations\/([^/]+)\/mode$/);

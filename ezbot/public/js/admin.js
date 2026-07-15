@@ -144,6 +144,19 @@ async function openConv(id) {
   
   renderInfo(c);
 
+  // ดึงข้อมูลออเดอร์และประวัติเติมเงินภายนอกจาก Next.js (ถ้ามีอีเมลหรือเบอร์โทร)
+  if (c.email || c.phone) {
+    fetch(API + `/api/conversations/${id}/external-orders`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && activeId === id) {
+          c.orders = data.orders || [];
+          renderInfo(c);
+        }
+      })
+      .catch(console.error);
+  }
+
   const msgs = await (await fetch(API + `/api/conversations/${id}/messages`)).json();
   const avatar = c.avatarUrl || `https://eu.ui-avatars.com/api/?name=${encodeURIComponent(c.customerName)}&background=dfe6f5&color=1e293b`;
   
@@ -610,13 +623,16 @@ function renderInfo(c) {
       </div>
       <div class="order-list">
         ${orders.length > 0
-          ? orders.map(o => `
-              <div class="order-item">
-                <a class="order-id" href="#">${escapeHtml(o.id)}</a>
+          ? orders.map(o => {
+              const statusColor = o.rawStatus === 'SUCCESS' ? '#16a34a' : o.rawStatus === 'PENDING' || o.rawStatus === 'PROCESSING' ? '#d97706' : '#dc2626';
+              return `
+              <div class="order-item" title="ID: ${escapeHtml(o.id)}" style="${o.type === 'topup' ? 'background-color: rgba(22, 163, 74, 0.05); padding: 4px; border-radius: 4px;' : ''}">
+                <span class="order-id" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; color: ${o.type === 'topup' ? '#16a34a' : 'var(--brand-blue)'};">${escapeHtml(o.title || o.id)}</span>
                 <span class="order-price">${escapeHtml(o.price)}</span>
                 <span class="order-date">${escapeHtml(o.date)}</span>
-                <span class="order-status">${escapeHtml(o.status)}</span>
-              </div>`).join('')
+                <span class="order-status" style="color: ${statusColor}; font-weight: 600;">${escapeHtml(o.status)}</span>
+              </div>`;
+            }).join('')
           : '<span style="font-size:12px;color:var(--text-muted);font-style:italic">ไม่มีประวัติการสั่งซื้อ</span>'
         }
       </div>
