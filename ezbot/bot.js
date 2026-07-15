@@ -279,13 +279,57 @@ async function aiReply(history, conv) {
 1. หากลูกค้าส่ง "สลิปโอนเงิน / ใบเสร็จธนาคาร" เข้ามา:
    - ตรวจสอบชื่อบัญชีปลายทาง ยอดเงิน วันและเวลา
    - ยืนยันยอดเงินที่ได้รับกับลูกค้าอย่างสุภาพ เช่น "ได้รับยอดเงินโอน 99 บาทเรียบร้อยค่ะ"
-   - สร้าง JSON ยืนยันคำสั่งซื้อตามรูปแบบข้อมูลที่ระบุไว้
+   - ห้ามตอบกลับลูกค้าเป็นรูปแบบโค้ดโปรแกรมหรือรูปแบบ JSON เด็ดขาด ให้ตอบเป็นข้อความธรรมดาเท่านั้น
 2. หากลูกค้าส่ง "รูปภาพทั่วไป / รูปหน้าจอขัดข้อง / สกรีนช็อตในเกม" เข้ามา:
    - ให้วิเคราะห์รูปภาพนั้นอย่างละเอียดเพื่อระบุปัญหาหรือเนื้อหาในภาพ
    - ตอบคำถามและแนะนำทางแก้ไขปัญหาทางเทคนิคให้กับลูกค้าโดยตรงตามรูปภาพนั้น
    - พูดคุยอย่างเป็นกันเองและสุภาพที่สุด;`;
 
   systemPrompt += dbProductPrompt;
+
+  // ค้นหาเลขออเดอร์ในข้อความล่าสุดของลูกค้า และสืบค้นสถานะจริงจากฐานข้อมูล
+  let orderInfoText = '';
+  const lastCustomerMsg = [...history].reverse().find(m => m.sender === 'customer');
+  if (lastCustomerMsg && lastCustomerMsg.text) {
+    const orderIdMatch = lastCustomerMsg.text.match(/\b(c[a-z0-9]{24})\b/i);
+    if (orderIdMatch) {
+      const orderId = orderIdMatch[1];
+      const internalSecret = process.env.EZBOT_INTERNAL_SECRET || 'fallback_default_secret_key';
+      const mainSiteUrl = process.env.MAIN_SITE_URL || 'http://127.0.0.1:3000';
+      try {
+        const res = await fetch(`${mainSiteUrl}/api/internal/query`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${internalSecret}`
+          },
+          body: JSON.stringify({ queryType: 'order_by_id', orderId })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.order) {
+            const o = data.order;
+            const statusThai = o.status === 'SUCCESS' ? 'สำเร็จ (ได้รับเครดิต/เกมเรียบร้อย)' : o.status === 'PENDING' ? 'รอดำเนินการ (ยังไม่ได้รับการชำระเงิน หรือรอตรวจสอบสลิป)' : o.status === 'PROCESSING' ? 'กำลังดำเนินการ' : 'ล้มเหลว/ยกเลิก';
+            orderInfoText = `\n\n[ข้อมูลออเดอร์จริงจากฐานข้อมูลหลัก / Actual Database Order Info]\n` +
+                            `พบข้อมูลออเดอร์สำหรับไอดี ${o.id}:\n` +
+                            `- เกม: ${o.game}\n` +
+                            `- แพ็กเกจ: ${o.package}\n` +
+                            `- ราคา: ${o.price} บาท\n` +
+                            `- สถานะปัจจุบัน: ${statusThai} (สถานะในระบบ: ${o.status})\n` +
+                            `กรุณาตอบลูกค้าตามสถานะจริงด้านบนนี้ ห้ามเดาหรือบอกว่าสำเร็จหากสถานะจริงยังเป็น PENDING`;
+          } else {
+            orderInfoText = `\n\n[ข้อมูลออเดอร์จริงจากฐานข้อมูลหลัก]\nไม่พบออเดอร์ไอดี ${orderId} ในระบบหลัก กรุณาแจ้งลูกค้าว่าไม่พบรหัสออเดอร์นี้เพื่อให้ลูกค้าตรวจสอบอีกครั้ง`;
+          }
+        }
+      } catch (e) {
+        console.error('Error fetching order info in AI reply:', e.message);
+      }
+    }
+  }
+
+  if (orderInfoText) {
+    systemPrompt += orderInfoText;
+  }
 
   // 1) ใช้ Gemini API เป็นอันดับแรก
   if (geminiApiKey) {
