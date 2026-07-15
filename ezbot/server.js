@@ -251,6 +251,7 @@ const server = http.createServer(async (req, res) => {
       'content-type': 'text/event-stream',
       'cache-control': 'no-cache',
       connection: 'keep-alive',
+      'x-accel-buffering': 'no'
     });
     res.write('retry: 3000\n\n');
     if (!convClients.has(cid)) convClients.set(cid, new Set());
@@ -265,6 +266,7 @@ const server = http.createServer(async (req, res) => {
       'content-type': 'text/event-stream',
       'cache-control': 'no-cache',
       connection: 'keep-alive',
+      'x-accel-buffering': 'no'
     });
     res.write('retry: 3000\n\n');
     adminClients.add(res);
