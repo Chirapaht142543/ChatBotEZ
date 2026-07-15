@@ -142,7 +142,11 @@ function render(m){
   if (m.kind === 'image') {
     const fallbackText = m.text && !m.text.includes('.') ? m.text : '';
     const capHtml = fallbackText ? `<div style="margin-top: 4px;">${escapeHtml(fallbackText)}</div>` : '';
-    bubbleContent = `<img src="${m.mediaUrl}" class="msg-image" alt="สลิปหรือรูปภาพ" />${capHtml}`;
+    let imgUrl = m.mediaUrl || '';
+    if (imgUrl.startsWith('/uploads/')) {
+      imgUrl = API + imgUrl;
+    }
+    bubbleContent = `<img src="${imgUrl}" class="msg-image" alt="สลิปหรือรูปภาพ" />${capHtml}`;
   } else {
     bubbleContent = escapeHtml(m.text || '');
   }

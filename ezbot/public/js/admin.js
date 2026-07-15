@@ -290,7 +290,11 @@ function addBubble(m) {
 
   if (m.kind === 'image') {
     const img = document.createElement('img');
-    img.src = m.mediaUrl || '/backpack.png';
+    let imgUrl = m.mediaUrl || '/backpack.png';
+    if (imgUrl.startsWith('/uploads/')) {
+      imgUrl = API + imgUrl;
+    }
+    img.src = imgUrl;
     img.className = 'message-image';
     bubble.appendChild(img);
     

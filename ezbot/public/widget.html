@@ -412,7 +412,11 @@ function render(m){
     const isFileName = m.text && /\.(png|jpe?g|gif|webp)$/i.test(m.text);
     const fallbackText = m.text && !isFileName ? m.text : '';
     const capHtml = fallbackText ? `<div style="margin-top: 8px; white-space: pre-wrap; text-align: left; line-height: 1.4; font-size: 13.5px; font-family: inherit;">${escapeHtml(fallbackText)}</div>` : '';
-    bubbleContent = `<img src="${m.mediaUrl}" class="msg-image" alt="สลิปหรือรูปภาพ" />${capHtml}`;
+    let imgUrl = m.mediaUrl || '';
+    if (imgUrl.startsWith('/uploads/')) {
+      imgUrl = API + imgUrl;
+    }
+    bubbleContent = `<img src="${imgUrl}" class="msg-image" alt="สลิปหรือรูปภาพ" />${capHtml}`;
   } else {
     bubbleContent = escapeHtml(m.text || '').replace(/\n/g, '<br>');
   }
