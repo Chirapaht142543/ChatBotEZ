@@ -704,6 +704,40 @@ setInterval(() => {
   ping();
 }, 25000);
 
+// ดึงข้อมูลสินค้าและราคาอัตโนมัติจาก Next.js
+async function syncProducts() {
+  const internalSecret = process.env.EZBOT_INTERNAL_SECRET || 'fallback_default_secret_key';
+  const mainSiteUrl = process.env.MAIN_SITE_URL || 'http://127.0.0.1:3000';
+
+  try {
+    const res = await fetch(`${mainSiteUrl}/api/internal/query`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${internalSecret}`
+      },
+      body: JSON.stringify({ queryType: 'products_sync' })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.products) {
+        db.saveProducts(data.products);
+        console.log(`[Sync] ทำการดึงรายการสินค้า ${data.products.length} เกมจากระบบหลักเรียบร้อยแล้ว`);
+      }
+    } else {
+      console.warn(`[Sync] ดึงข้อมูลสินค้าไม่สำเร็จ: สถานะ HTTP ${res.status}`);
+    }
+  } catch (err) {
+    console.error(`[Sync] เกิดข้อผิดพลาดในการดึงข้อมูลสินค้า: ${err.message}`);
+  }
+}
+
+// อัปเดตข้อมูลทุกๆ 5 นาที
+setInterval(syncProducts, 5 * 60 * 1000);
+// รันอัปเดตครั้งแรกหลังรันเซิร์ฟเวอร์ไปแล้ว 5 วินาที
+setTimeout(syncProducts, 5000);
+
 server.listen(PORT, () => {
   console.log(`\n  EZ BOT ทำงานที่ http://localhost:${PORT}`);
   console.log(`  - หน้าแอดมิน:  http://localhost:${PORT}/admin.html`);
